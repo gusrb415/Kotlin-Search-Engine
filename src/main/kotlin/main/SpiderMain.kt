@@ -11,7 +11,7 @@ class SpiderMain {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val rootLink = "http://www.cse.ust.hk/"
+            val rootLink = "https://www.cse.ust.hk/"
             val urlDB = RocksDB(URL_DB_NAME)
             val wordDB = RocksDB(WORD_DB_NAME)
             val spiderDB = RocksDB(SPIDER_DB_NAME)
@@ -19,8 +19,7 @@ class SpiderMain {
             spiderDB.removeAll()
             wordDB.removeAll()
 
-            var linkList = HTMLParser.extractLink(rootLink
-                , rootLink.split("www.").last().substring(0, 10))
+            var linkList = HTMLParser.extractLink(rootLink, filter=rootLink)
             linkList = linkList.subList(0, 30)
 
             var counter = 0

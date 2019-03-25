@@ -20,7 +20,7 @@ class DatabaseTest {
                 val title = HTMLParser.getTitle(it)
                 val date = HTMLParser.getDate(it)
                 val size = HTMLParser.getSize(it)
-                val childLinks = HTMLParser.extractLink(it)
+                val childLinks = HTMLParser.extractLink(it, it)
                 printMap[it] = phaseOnePrint(title, it, date, size, keywords, childLinks)
             }
 

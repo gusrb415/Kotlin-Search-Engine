@@ -54,7 +54,8 @@ object HTMLParser {
         while (words.hasMoreTokens()) {
             val word = words.nextToken()
             if(!isStopWord(word))
-                strList.add(stem(word))
+//                strList.add(stem(word))
+                strList.add(word)
         }
         return strList
     }
@@ -66,9 +67,8 @@ object HTMLParser {
             .map { it.toExternalForm() }
             .filter { if(filter != null) it.contains(filter) else true }
             .map { if(it.contains("#")) it.split("#")[0] else it }
-            .toSet()
+            .toSortedSet()
             .map { URL(it) }
-            .toList()
     }
 
     fun getSize(link: String): Int {
