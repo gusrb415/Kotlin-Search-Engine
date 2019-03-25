@@ -62,13 +62,13 @@ class RocksDB(path: String) {
         }
     }
 
-    fun findFrequency(docID: Int): Map<String, Int> {
+    fun findFrequency(docID: Int, wordDB: util.RocksDB): Map<String, Int> {
         val iter = rocksDB.newIterator()
 
         iter.seekToFirst()
         val map = mutableMapOf<String, Int>()
         while (iter.isValid) {
-            val key = String(iter.key())
+            val key = wordDB.getKey(String(iter.key())) ?: throw NullPointerException()
             var count = 0
             val values = String(iter.value())
                 .split("doc")
@@ -83,6 +83,28 @@ class RocksDB(path: String) {
         }
 
         return map
+    }
+
+    fun getAllKeys(): List<String> {
+        val iter = rocksDB.newIterator()
+        val mutableList = mutableListOf<String>()
+        iter.seekToFirst()
+        while (iter.isValid) {
+            mutableList.add(String(iter.key()))
+            iter.next()
+        }
+        return mutableList
+    }
+
+    fun getKey(value: String): String? {
+        val iter = rocksDB.newIterator()
+        iter.seekToFirst()
+        while (iter.isValid) {
+            if(String(iter.value()) == value)
+                return String(iter.key())
+            iter.next()
+        }
+        return null
     }
 
     private fun put(key: String, value: String) {
@@ -100,6 +122,14 @@ class RocksDB(path: String) {
     operator fun get(key: String?): String?{
         return try {
             String(rocksDB.get(key?.toByteArray() ?: throw NullPointerException()))
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    operator fun get(key: ByteArray?): ByteArray?{
+        return try {
+            rocksDB.get(key ?: throw NullPointerException())
         } catch (e: Exception) {
             null
         }
