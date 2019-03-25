@@ -1,5 +1,8 @@
 *.iml
+*.txt
 .gradle/
 .idea/
 out/
-rockTest/
+rockSpider/
+rockUrl/
+rockWord/
