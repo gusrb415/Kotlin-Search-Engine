@@ -10,12 +10,9 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
-//    compile group: 'org.apache.jdbm', name: 'jdbm', version: '3.0-alpha5'
-    compile group: 'com.github.kittinunf.fuel', name: 'fuel', version: '2.0.1'
     compile group: 'org.htmlparser', name: 'htmlparser', version: '2.1'
     compile group: 'org.rocksdb', name: 'rocksdbjni', version: '5.17.2'
 

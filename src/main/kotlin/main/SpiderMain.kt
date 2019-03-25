@@ -10,7 +10,7 @@ class SpiderMain {
         @JvmStatic
         fun main(args: Array<String>) {
             val rootLink = "http://www.cse.ust.hk/"
-            val linkList = HTMLParser.extractLink(rootLink)
+            var linkList = HTMLParser.extractLink(rootLink)
             val urlDB = RocksDB("rockUrls")
             val spiderDB = RocksDB("rockTest")
             var counter = 0
@@ -21,6 +21,7 @@ class SpiderMain {
 
             spiderDB.removeAll()
 
+            linkList = linkList.subList(0, 30)
             linkList.parallelStream().forEach {
                 val wordList = HTMLParser.extractText(it.toExternalForm())
                 val index = urlDB[it.toExternalForm()]!!.toInt()
@@ -38,6 +39,8 @@ class SpiderMain {
                 val date = HTMLParser.getDate(link)
                 val size = HTMLParser.getSize(link)
                 phaseOnePrint(title, link, date, size, keywords, HTMLParser.extractLink(link))
+                if(it != linkList.last())
+                    println("-----------------------------------------------------------------------------------------")
             }
             System.setOut(temp)
 
@@ -50,7 +53,7 @@ class SpiderMain {
                                   date: String, size: Int,
                                   keywordCounts: Map<String, Int>,
                                   childLinks: List<URL>) {
-            print("""$title,\n$url,\n$date, $size\n${keywordCounts.entries},\n$childLinks""")
+            println("$title,\n$url,\n$date, $size\n${keywordCounts.entries},\n$childLinks")
         }
     }
 }
