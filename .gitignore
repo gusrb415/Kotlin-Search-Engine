@@ -3,6 +3,4 @@
 .gradle/
 .idea/
 out/
-rockSpider/
-rockUrl/
-rockWord/
+RocksDB/

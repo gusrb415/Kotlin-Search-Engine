@@ -1,27 +1,37 @@
 package main
 
-import util.HTMLParser
+import util.CSVParser
 import util.RocksDB
 import java.io.PrintStream
-import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.*
 
 class DatabaseTest {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
             val urlDB = RocksDB(SpiderMain.URL_DB_NAME)
+            val urlInfoDB = RocksDB(SpiderMain.URL_INFO_DB_NAME)
+            val urlChildDB = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
             val spiderDB = RocksDB(SpiderMain.SPIDER_DB_NAME)
             val wordDB = RocksDB(SpiderMain.WORD_DB_NAME)
-            val linkList = urlDB.getAllKeys()
+            val linkList = urlInfoDB.getAllKeys()
 
             val printMap = mutableMapOf<String, String>().toSortedMap()
             linkList.parallelStream().forEach {
-                val keywords = spiderDB.findFrequency(urlDB[it]!!.toInt(), wordDB)
-                val title = HTMLParser.getTitle(it)
-                val date = HTMLParser.getDate(it)
-                val size = HTMLParser.getSize(it)
-                val childLinks = HTMLParser.extractLink(it, it)
-                printMap[it] = phaseOnePrint(title, it, date, size, keywords, childLinks)
+                val keywords = spiderDB.findFrequency(it.toInt(), wordDB)
+                val infoList = CSVParser.parseFrom(urlInfoDB[it]!!)
+                val title = infoList[0]
+                val date = infoList[1].toLong()
+                val size = infoList[2].toInt()
+                val childLinkIds = CSVParser.parseFrom(urlChildDB[it]!!)
+                val childLinkStrings = mutableListOf<String>()
+                for (id in childLinkIds) {
+                    if(id.isEmpty())
+                        continue
+                    childLinkStrings.add(urlDB.getKey(id)!!)
+                }
+                printMap[it] = phaseOnePrint(title, urlDB.getKey(it)!!, date, size, keywords, childLinkStrings)
             }
 
             val temp = System.out
@@ -33,18 +43,24 @@ class DatabaseTest {
             }
             System.setOut(temp)
 
+            urlInfoDB.close()
             urlDB.close()
-            spiderDB.close()
+            urlChildDB.close()
             wordDB.close()
+            spiderDB.close()
+        }
+
+        private fun buildDateFromLong(longNumber: Long): String {
+            return SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date(longNumber))
         }
 
         private fun phaseOnePrint(title: String,
                                   url: String,
-                                  date: String, size: Int,
+                                  date: Long, size: Int,
                                   keywordCounts: Map<String, Int>,
-                                  childLinks: List<URL>): String {
+                                  childLinks: List<String>): String {
             val sb = StringBuilder()
-            sb.append("$title\n$url\n$date, $size\n")
+            sb.append("$title\n$url\n${buildDateFromLong(date)}, $size\n")
                 .append(keywordCounts.toString()
                     .replace(",", ";")
                     .replace("=", " ")
@@ -57,7 +73,7 @@ class DatabaseTest {
                     .replace("]", "")
                     .replace(", ", "\n")
                 )
-                .append('\n')
+                .append(if(childLinks.isNotEmpty()) '\n' else "")
             return sb.toString()
         }
     }

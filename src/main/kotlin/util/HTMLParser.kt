@@ -8,6 +8,7 @@ import java.io.BufferedReader
 import java.io.FileReader
 import java.io.IOException
 import java.net.URL
+import java.sql.Timestamp
 import java.util.*
 
 
@@ -38,9 +39,9 @@ object HTMLParser {
 
     private fun processText(str: String): String {
         return str
-            .replace(Regex("[\n\t]"), " ")
-            .filter { it.isLetter() || it == ' ' }
-            .toLowerCase()
+            .map { if(it.isDigit() || !it.isLetter()) ' ' else it.toLowerCase()}
+            .joinToString("")
+            .replace("\\s".toRegex(), " ")
     }
 
     fun extractText(url: String): List<String> {
@@ -60,13 +61,14 @@ object HTMLParser {
         return strList
     }
 
-    fun extractLink(url: String, filter: String? = null): List<URL> {
+    fun extractLink(url: String, filter: String? = null, self: Boolean = true): List<URL> {
         val bean = LinkBean()
         bean.url = url
         return bean.links
             .map { it.toExternalForm() }
             .filter { if(filter != null) it.contains(filter) else true }
             .map { if(it.contains("#")) it.split("#")[0] else it }
+            .filter { if(!self) it != url else true }
             .toSortedSet()
             .map { URL(it) }
     }
@@ -87,7 +89,7 @@ object HTMLParser {
         return nodeList?.elementAt(0)?.lastChild?.toPlainTextString() ?: ""
     }
 
-    fun getDate(link: String): String {
+    fun getDate(link: String): Long {
         val parser = Parser()
         parser.url = link
         val connection = URL(link).openConnection()
@@ -97,8 +99,8 @@ object HTMLParser {
                 AndFilter(TagNameFilter("p"),
                     HasAttributeFilter("class", "copyright")))
                 ?.elementAt(0)?.toPlainTextString()?.replace("\\s".toRegex(), "")!!
-                .split("on")[1]
+                .split("on")[1] + " 00:00:00"
         else ""
-        return if(lastModifiedHeader != 0.toLong()) Date(lastModifiedHeader).toString() else textExtraction
+        return if(lastModifiedHeader != 0.toLong()) lastModifiedHeader else Timestamp.valueOf(textExtraction).time
     }
 }

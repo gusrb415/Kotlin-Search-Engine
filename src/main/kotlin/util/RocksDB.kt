@@ -2,6 +2,8 @@ package util
 
 import org.rocksdb.Options
 import org.rocksdb.RocksDB
+import org.rocksdb.RocksDBException
+import java.io.File
 import java.lang.NullPointerException
 
 class RocksDB(path: String) {
@@ -13,7 +15,13 @@ class RocksDB(path: String) {
         options = Options().setCreateIfMissing(true)
         options.setAllowMmapReads(true)
         options.setAllowMmapWrites(true)
-        rocksDB = RocksDB.open(options, path)
+        rocksDB = try {
+            RocksDB.open(options, path)
+        } catch (e: RocksDBException) {
+            val dir = path.split("/")[0]
+            File(dir).mkdir()
+            RocksDB.open(options, path)
+        }
     }
 
     fun close() {
@@ -96,6 +104,17 @@ class RocksDB(path: String) {
         return mutableList
     }
 
+    fun getAllValues(): List<String> {
+        val iter = rocksDB.newIterator()
+        val mutableList = mutableListOf<String>()
+        iter.seekToFirst()
+        while (iter.isValid) {
+            mutableList.add(String(iter.value()))
+            iter.next()
+        }
+        return mutableList
+    }
+
     fun getKey(value: String): String? {
         val iter = rocksDB.newIterator()
         iter.seekToFirst()
@@ -111,12 +130,23 @@ class RocksDB(path: String) {
         rocksDB.put(key.toByteArray(), value.toByteArray())
     }
 
-    operator fun set(word: String, docID: Int, pos: Int) {
-        addEntry(word, docID, pos)
+    operator fun set(word: String, pair: Pair<Int, Int>) {
+        addEntry(word, pair.first, pair.second)
     }
 
     operator fun set(url: String, docID: Int) {
         put(url, docID.toString())
+    }
+
+    operator fun set(url: String, triple: Triple<String, String, String>) {
+        val temp = CSVParser.parseTo(triple)
+        put(url, temp)
+    }
+
+    operator fun set(urlId: Int, linkList: List<Int>) {
+        val stringList = mutableListOf<String>()
+        linkList.forEach { stringList.add(it.toString()) }
+        put(urlId.toString(), CSVParser.parseTo(stringList))
     }
 
     operator fun get(key: String?): String?{

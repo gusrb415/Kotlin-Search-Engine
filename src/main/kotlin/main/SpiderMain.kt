@@ -5,43 +5,96 @@ import util.RocksDB
 
 class SpiderMain {
     companion object {
-        const val URL_DB_NAME  = "rockUrl"
-        const val WORD_DB_NAME = "rockWord"
-        const val SPIDER_DB_NAME = "rockSpider"
+        /**
+         * URL_DB_NAME - Web url: String to Web id: Int database
+         * URL_INFO_DB_NAME - Web id: Int to (Title: String, Date-Modified: Long, Size: Int)
+         * URL_CHILD_DB_NAME - Web id: Int to List(Child Web id: Int)
+         * WORD_DB_NAME - Word: String to Word id: Int database
+         * SPIDER_DB_NAME - Word id: Int to List(Web id: Int, Word Location: Int)) database
+         */
+        private const val BASE_URL = "RocksDB"
+        const val URL_DB_NAME  = "$BASE_URL/rockUrl"
+        const val URL_INFO_DB_NAME = "$BASE_URL/rockUrlInfo"
+        const val URL_CHILD_DB_NAME = "$BASE_URL/rockUrlChild"
+        const val WORD_DB_NAME = "$BASE_URL/rockWord"
+        const val SPIDER_DB_NAME = "$BASE_URL/rockSpider"
 
         @JvmStatic
         fun main(args: Array<String>) {
             val rootLink = "https://www.cse.ust.hk/"
             val urlDB = RocksDB(URL_DB_NAME)
+            val urlInfoDB = RocksDB(URL_INFO_DB_NAME)
+            val urlChildDB = RocksDB(URL_CHILD_DB_NAME)
             val wordDB = RocksDB(WORD_DB_NAME)
             val spiderDB = RocksDB(SPIDER_DB_NAME)
             urlDB.removeAll()
+            urlInfoDB.removeAll()
+            urlChildDB.removeAll()
             spiderDB.removeAll()
             wordDB.removeAll()
 
+            // Filter ensures only child links to be returned
             var linkList = HTMLParser.extractLink(rootLink, filter=rootLink)
+            // PHASE 1 requires only 30 links
             linkList = linkList.subList(0, 30)
 
+            val urlSet = mutableSetOf<String>()
+            linkList.parallelStream().forEach {
+                val link = it.toExternalForm()
+                urlSet.add(link)
+                val childLinks = HTMLParser.extractLink(link, link)
+                childLinks.forEach { childUrl ->
+                    val childLink = childUrl.toExternalForm()
+                    urlSet.add(childLink)
+                }
+            }
+
             var counter = 0
-            for(linkUrl in linkList) {
-                val link = linkUrl.toExternalForm()
-                if(urlDB[link] == null) urlDB[link] = counter++
+            urlSet.toSortedSet().forEach {
+                urlDB[it] = counter++
+            }
+
+            linkList.parallelStream().forEach {
+                val link = it.toExternalForm()
+                val childLinks = HTMLParser.extractLink(link, filter=link, self=false)
+                val childLinkIdList = mutableListOf<Int>()
+                childLinks.forEach { childUrl ->
+                    childLinkIdList.add(urlDB[childUrl.toExternalForm()]!!.toInt())
+                }
+                urlChildDB[urlDB[link]!!.toInt()] = childLinkIdList
+            }
+
+            linkList.parallelStream().forEach {
+                val link = it.toExternalForm()
+                val title = HTMLParser.getTitle(link)
+                val date = HTMLParser.getDate(link)
+                val size = HTMLParser.getSize(link)
+                urlInfoDB[urlDB[link]!!] = Triple(title, date.toString(), size.toString())
+            }
+
+            val wordSet = mutableSetOf<String>()
+            linkList.parallelStream().forEach {
+                val wordList = HTMLParser.extractText(it.toExternalForm())
+                for(word in wordList)
+                    wordSet.add(word)
             }
 
             counter = 0
+            wordSet.toSortedSet().forEach {
+                wordDB[it] = counter++
+            }
+
             linkList.parallelStream().forEach {
                 val wordList = HTMLParser.extractText(it.toExternalForm())
-                for(word in wordList) {
-                    if (wordDB[word] == null) wordDB[word] = counter++
-                }
-                val urlID = urlDB[it.toExternalForm()]!!.toInt()
                 for(i in 0 until wordList.size) {
-                    spiderDB[wordDB[wordList[i]]!!, urlID] = i
+                    spiderDB[wordDB[wordList[i]]!!] = Pair(urlDB[it.toExternalForm()]!!.toInt(), i)
                 }
             }
 
-            wordDB.close()
+            urlInfoDB.close()
             urlDB.close()
+            urlChildDB.close()
+            wordDB.close()
             spiderDB.close()
         }
     }
