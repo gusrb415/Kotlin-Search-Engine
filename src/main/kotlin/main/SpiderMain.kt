@@ -19,6 +19,18 @@ class SpiderMain {
         const val WORD_DB_NAME = "$BASE_URL/rockWord"
         const val SPIDER_DB_NAME = "$BASE_URL/rockSpider"
 
+        fun clearAllDB(vararg databases: RocksDB) {
+            databases.forEach {
+                it.removeAll()
+            }
+        }
+
+        fun closeAllDB(vararg databases: RocksDB) {
+            databases.forEach {
+                it.close()
+            }
+        }
+
         @JvmStatic
         fun main(args: Array<String>) {
             val rootLink = "https://www.cse.ust.hk/"
@@ -27,11 +39,8 @@ class SpiderMain {
             val urlChildDB = RocksDB(URL_CHILD_DB_NAME)
             val wordDB = RocksDB(WORD_DB_NAME)
             val spiderDB = RocksDB(SPIDER_DB_NAME)
-            urlDB.removeAll()
-            urlInfoDB.removeAll()
-            urlChildDB.removeAll()
-            spiderDB.removeAll()
-            wordDB.removeAll()
+            val databases = arrayOf(urlDB, urlInfoDB, urlChildDB, spiderDB, wordDB)
+            clearAllDB(*databases)
 
             // Filter ensures only child links to be returned
             var linkList = HTMLParser.extractLink(rootLink, filter=rootLink)
@@ -67,9 +76,9 @@ class SpiderMain {
             linkList.parallelStream().forEach {
                 val link = it.toExternalForm()
                 val title = HTMLParser.getTitle(link)
-                val date = HTMLParser.getDate(link)
-                val size = HTMLParser.getSize(link)
-                urlInfoDB[urlDB[link]!!] = Triple(title, date.toString(), size.toString())
+                val date = HTMLParser.getDate(link).toString()
+                val size = HTMLParser.getSize(link).toString()
+                urlInfoDB[urlDB[link]!!] = Triple(title, date, size)
             }
 
             val wordSet = mutableSetOf<String>()
@@ -91,11 +100,7 @@ class SpiderMain {
                 }
             }
 
-            urlInfoDB.close()
-            urlDB.close()
-            urlChildDB.close()
-            wordDB.close()
-            spiderDB.close()
+            closeAllDB(*databases)
         }
     }
 }

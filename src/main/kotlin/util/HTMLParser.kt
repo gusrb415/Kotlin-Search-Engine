@@ -39,7 +39,7 @@ object HTMLParser {
 
     private fun processText(str: String): String {
         return str
-            .map { if(it.isDigit() || !it.isLetter()) ' ' else it.toLowerCase()}
+            .map { if(!(it.isDigit() || it.isLetter())) ' ' else it.toLowerCase()}
             .joinToString("")
             .replace("\\s".toRegex(), " ")
     }
@@ -55,8 +55,7 @@ object HTMLParser {
         while (words.hasMoreTokens()) {
             val word = words.nextToken()
             if(!isStopWord(word))
-//                strList.add(stem(word))
-                strList.add(word)
+                strList.add(stem(word))
         }
         return strList
     }
@@ -66,7 +65,7 @@ object HTMLParser {
         bean.url = url
         return bean.links
             .map { it.toExternalForm() }
-            .filter { if(filter != null) it.contains(filter) else true }
+            .filter { if(filter != null) it.contains(filter, ignoreCase=true) else true }
             .map { if(it.contains("#")) it.split("#")[0] else it }
             .filter { if(!self) it != url else true }
             .toSortedSet()

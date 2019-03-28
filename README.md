@@ -5,7 +5,7 @@ Spring 2019 - Group 25
 
 //your name please
 
-//your name please
+KIM, Hyun Gyu (hgkim@connect.ust.hk) 20375138
 
 CHEUNG, Ka Ho (khcheungap@connect.ust.hk) 20465294
 
