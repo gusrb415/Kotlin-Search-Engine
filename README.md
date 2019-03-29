@@ -30,7 +30,7 @@ CHEUNG, Ka Ho (khcheungap@connect.ust.hk) 20465294
 
 ##### Phase 1 Test Program
 
-* To retrieve the result from the .db, open and run Phase1Test.kt in the project
+* To retrieve the result from the .db, open and run DatabaseTest.kt in the project
 
 ##### Database Schema
 
