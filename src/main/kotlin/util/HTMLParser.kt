@@ -93,14 +93,22 @@ object HTMLParser {
         val parser = Parser()
         parser.url = link
         val connection = URL(link).openConnection()
-        val lastModifiedHeader = connection.lastModified
-        val textExtraction = if(lastModifiedHeader == 0.toLong())
-            parser.extractAllNodesThatMatch(
-                AndFilter(TagNameFilter("p"),
-                    HasAttributeFilter("class", "copyright")))
-                ?.elementAt(0)?.toPlainTextString()?.replace("\\s".toRegex(), "")!!
-                .split("on")[1] + " 00:00:00"
-        else ""
-        return if(lastModifiedHeader != 0.toLong()) lastModifiedHeader else Timestamp.valueOf(textExtraction).time
+        var lastModifiedHeader = connection.lastModified
+        val dateExtraction = if(lastModifiedHeader == 0.toLong()) {
+            try {
+                parser.extractAllNodesThatMatch(
+                    AndFilter(
+                        TagNameFilter("p"),
+                        HasAttributeFilter("class", "copyright")
+                    )
+                )
+                    ?.elementAt(0)?.toPlainTextString()?.replace("\\s".toRegex(), "")!!
+                    .split("on")[1] + " 00:00:00"
+            } catch (e: Exception) {
+                lastModifiedHeader = connection.date
+                "1990-01-01 00:00:00"
+            }
+        } else "1990-01-01 00:00:00"
+        return if(lastModifiedHeader != 0.toLong()) lastModifiedHeader else Timestamp.valueOf(dateExtraction).time
     }
 }

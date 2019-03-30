@@ -7,7 +7,7 @@ class SpiderMain {
     companion object {
         /**
          * URL_DB_NAME - Web url: String to Web id: Int database
-         * URL_INFO_DB_NAME - Web id: Int to (Title: String, Date-Modified: Long, Size: Int)
+         * URL_INFO_DB_NAME - Web id: Int to Triple(Title: String, Date-Modified: Long, Size: Int)
          * URL_CHILD_DB_NAME - Web id: Int to List(Child Web id: Int)
          * WORD_DB_NAME - Word: String to Word id: Int database
          * SPIDER_DB_NAME - Word id: Int to List(Web id: Int, Word Location: Int)) database
@@ -19,13 +19,13 @@ class SpiderMain {
         const val WORD_DB_NAME = "$BASE_URL/rockWord"
         const val SPIDER_DB_NAME = "$BASE_URL/rockSpider"
 
-        fun clearAllDB(vararg databases: RocksDB) {
+        private fun clearAllDB(vararg databases: RocksDB) {
             databases.forEach {
                 it.removeAll()
             }
         }
 
-        fun closeAllDB(vararg databases: RocksDB) {
+        private fun closeAllDB(vararg databases: RocksDB) {
             databases.forEach {
                 it.close()
             }
