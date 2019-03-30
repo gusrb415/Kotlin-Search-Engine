@@ -14,7 +14,8 @@ import java.util.*
 
 object HTMLParser {
     private val stopWords = mutableSetOf<String>()
-    private val filePath = this::class.java.classLoader.getResource("stopwords.txt").toExternalForm().split("file:/").last()
+    private val filePath = this::class.java.classLoader.getResource("stopwords.txt").toExternalForm().split("file:").last()
+//    private val filePath = this::class.java.classLoader.getResource("stopwords.txt").toExternalForm().split("file:/").last()
     init {
         try {
             val reader = BufferedReader(FileReader(filePath))
