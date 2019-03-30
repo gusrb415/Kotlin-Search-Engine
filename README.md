@@ -3,26 +3,28 @@
 
 Spring 2019 - Group 25
 
-//your name please
+AU, Ho Leong (hlauac@connect.ust.hk) 20260060
 
 KIM, Hyun Gyu (hgkim@connect.ust.hk) 20375138
 
 CHEUNG, Ka Ho (khcheungap@connect.ust.hk) 20465294
 
 #### Phase 1 - Build Web Spider
-| submission files                      |
+| Submission files                      |
 |---------------------------------------| 
-| database schema                       |
-| source code of spider and test program|
+| Database schema                       |
+| Source code of spider and test program|
 | readme.txt                            |
-| database file                         |
+| Database file                         |
 | spider_result.txt                     |
 
 ##### Project Setup
-
-1. Install IntelliJ IDEA in https://www.jetbrains.com/idea/ 
-2. Install Gradle Build Tool in https://gradle.org/
-3. Select open project: comp4321-Search-Engine-project
+ | Setup Instructions |
+ |--------------|
+ | 1. Download and install IntelliJ IDEA from https://www.jetbrains.com/idea/ |
+ | 2. Download and install Gradle Build Tool from https://gradle.org/ |
+ | 3. Select open project: comp4321-Search-Engine-project as Gradle project |
+ | 4. Build the project |
 
 ##### Run Spider
 
