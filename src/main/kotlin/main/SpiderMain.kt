@@ -51,7 +51,7 @@ class SpiderMain {
             linkList.parallelStream().forEach {
                 val link = it.toExternalForm()
                 urlSet.add(link)
-                val childLinks = HTMLParser.extractLink(link, link)
+                val childLinks = HTMLParser.extractLink(link)
                 childLinks.forEach { childUrl ->
                     val childLink = childUrl.toExternalForm()
                     urlSet.add(childLink)
@@ -65,7 +65,7 @@ class SpiderMain {
 
             linkList.parallelStream().forEach {
                 val link = it.toExternalForm()
-                val childLinks = HTMLParser.extractLink(link, filter=link, self=false)
+                val childLinks = HTMLParser.extractLink(link, filter=null, self=false)
                 val childLinkIdList = mutableListOf<Int>()
                 childLinks.forEach { childUrl ->
                     childLinkIdList.add(urlDB[childUrl.toExternalForm()]!!.toInt())
