@@ -3,10 +3,11 @@ Project Setup
 Install IntelliJ IDEA in https://www.jetbrains.com/idea/
 Install Gradle Build Tool in https://gradle.org/
 (Or use local gradle distribution from Intellij)
-Select import project using Gradle: comp4321-Search-Engine-project
+Select import project using Gradle: Comp4321-Search-Engine-project
+Build Project Using Gradle
 
 Run Spider
-Open and Run SpiderMain.kt in the project (Requires Kotlin Compiler downloadable using Gradle)
+Compile and Run SpiderMain.kt in the project (Requires Kotlin Compiler downloadable using Gradle)
 Folder RocksDB is created with several databases.
 
 Phase 1 Test Program

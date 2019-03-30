@@ -92,7 +92,7 @@ object HTMLParser {
     fun getDate(link: String): Long {
         val parser = Parser()
         parser.url = link
-        val connection = URL(link).openConnection()
+        val connection = parser.connection
         var lastModifiedHeader = connection.lastModified
         val dateExtraction = if(lastModifiedHeader == 0.toLong()) {
             try {
