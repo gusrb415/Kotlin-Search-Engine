@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<head lang="en">
+    <title>SearchEngine</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<h1 th:text="${host}">SearchEngine</h1>
+<h1>SearchEngine</h1>
+    <form action="#" th:action="@{/web}" th:object="${web}" method="post">
+        <p>Query: <input type="text" th:field="*{content}"/></p>
+        <p><input type="submit" value="Submit"/> <input type="reset" value="Reset"/></p>
+    </form>
+</body>
+</html>
