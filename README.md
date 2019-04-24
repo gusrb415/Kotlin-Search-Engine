@@ -39,3 +39,19 @@ CHEUNG, Ka Ho (khcheungap@connect.ust.hk) 20465294
 * Please refer to readme.txt
 
 #### Phase 2 - Build full Search Engine
+
+##### web interface
+
+* use spring boot for web interface because
+
+* Kotlin works quite smoothly with Spring Boot and many of the steps found on the Spring Guides
+
+* https://kotlinlang.org/docs/tutorials/spring-boot-restful.html kotlin guideline for spring boot
+
+* https://spring.io/guides/gs/handling-form-submission/ spring boot handling submission tutorial (JAVA)
+
+* src/main/kotlin/spring/web.kt and src/main/kotlin/resources/templates/result.html needed further editing
+
+* starter program: src/main/kotlin/spring/application.kt
+
+* default host: http://localhost:8080
