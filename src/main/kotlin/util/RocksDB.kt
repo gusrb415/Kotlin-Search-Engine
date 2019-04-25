@@ -29,19 +29,6 @@ class RocksDB(path: String) {
         options.close()
     }
 
-    private fun addEntry(word: String, x: Int, y: Int) {
-        // Add a "docX Y" entry for the key "word" into hashtable
-        synchronized(this) {
-            var content = get(word)
-            content = if (content == null) {
-                "doc$x $y"
-            } else {
-                "$content doc$x $y"
-            }
-            put(word, content)
-        }
-    }
-
     fun remove(word: String) {
         rocksDB.delete(word.toByteArray())
     }
@@ -64,8 +51,14 @@ class RocksDB(path: String) {
         val iter = rocksDB.newIterator()
 
         iter.seekToFirst()
+        var counter = 0
+        val sb = StringBuilder()
         while (iter.isValid) {
-            println(String(iter.key()) + "=" + String(iter.value()))
+            sb.append(String(iter.key())).append(' ').append(String(iter.value()))
+            if (++counter % 10 == 0) {
+                println(sb.toString())
+                sb.clear()
+            } else sb.append(", ")
             iter.next()
         }
     }
@@ -131,7 +124,16 @@ class RocksDB(path: String) {
     }
 
     operator fun set(word: String, pair: Pair<Int, Int>) {
-        addEntry(word, pair.first, pair.second)
+        // Add a "docX Y" entry for the key "word" into hashtable
+        synchronized(this) {
+            var content = get(word)
+            content = if (content == null) {
+                "d${pair.first} ${pair.second}"
+            } else {
+                "$content d${pair.first} ${pair.second}"
+            }
+            put(word, content)
+        }
     }
 
     operator fun set(url: String, docID: Int) {
