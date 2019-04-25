@@ -20,10 +20,11 @@ class SpiderMain {
         const val URL_CHILD_DB_NAME = "$BASE_URL/rockUrlChild"
         const val WORD_DB_NAME = "$BASE_URL/rockWord"
         const val SPIDER_DB_NAME = "$BASE_URL/rockSpider"
+        const val URL_WORDS_DB_NAME = "$BASE_URL/rockUrlWords"
 
         private fun clearAllDB(vararg databases: RocksDB) {
             println("Clearing all databases")
-            databases.forEach {
+            databases.toList().parallelStream().forEach {
                 it.removeAll()
             }
         }
@@ -35,14 +36,10 @@ class SpiderMain {
             }
         }
 
-        private fun recursivelyCrawlLinks(
-            url: URL,
-            filter: String,
-            urlSet: MutableSet<URL>,
-            visitedUrls: MutableSet<URL>? = null
-        ) {
+        private fun recursivelyCrawlLinks(url: URL, filter: String,
+                                          urlSet: MutableSet<URL>, visitedUrls: MutableSet<URL>? = null) {
             val visited = visitedUrls ?: mutableSetOf()
-            if (url in visited || urlSet.size > 200)
+            if (url in visited || urlSet.size > 300)
                 return
 
             val links = HTMLParser.extractLink(url.toExternalForm(), filter = filter)
@@ -68,7 +65,9 @@ class SpiderMain {
             val wordDB = RocksDB(WORD_DB_NAME)
             // wordID -> list(urlID, position)
             val spiderDB = RocksDB(SPIDER_DB_NAME)
-            val databases = arrayOf(urlDB, urlInfoDB, urlChildDB, spiderDB, wordDB)
+            // urlID -> list(wordID)
+            val urlWordsDB = RocksDB(URL_WORDS_DB_NAME)
+            val databases = arrayOf(urlDB, urlInfoDB, urlChildDB, spiderDB, wordDB, urlWordsDB)
             clearAllDB(*databases)
 
             // Retrieve all links under the root link recursively
@@ -145,19 +144,16 @@ class SpiderMain {
             wordList.keys.parallelStream().forEach { id ->
                 val words = wordList[id]!!
                 var i = 0
-                words.forEach { word ->
-                    try {
-                        spiderDB[wordDB[word]!!] = Pair(id, i++)
-                    } catch (e: NullPointerException) {
-                        println("\"$word\" failed being indexed")
-                    }
+                val wordsToIds = words.map { wordDB[it]!! }
+                urlWordsDB[id] = wordsToIds.map { it.toInt() }
+                wordsToIds.forEach { wordId ->
+                    spiderDB[wordId] = Pair(id, i++)
                 }
                 if (++counter % 10 == 0) {
                     println("Currently wrote $counter websites to DB")
                     println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
                 }
             }
-            println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
             closeAllDB(*databases)
         }

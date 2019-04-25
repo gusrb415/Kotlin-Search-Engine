@@ -56,7 +56,7 @@ object HTMLParser {
         val strList = mutableListOf<String>()
         while (words.hasMoreTokens()) {
             val word = words.nextToken()
-            if(!isStopWord(word) && !word.contains(nonEnglishRegex))
+            if(!isStopWord(word))
                 strList.add(stem(word))
         }
         return strList
