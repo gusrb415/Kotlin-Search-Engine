@@ -72,7 +72,7 @@ class RocksDB(path: String) {
             val key = wordDB.getKey(String(iter.key())) ?: throw NullPointerException()
             var count = 0
             val values = String(iter.value())
-                .split("doc")
+                .split("d")
                 .flatMap { it.split(" ") }
                 .filter { it != "" }
                 .map{ it.toInt() }
