@@ -142,9 +142,9 @@ public class Ranker {
                         Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                                 (e1, e2) -> e2, LinkedHashMap::new));
 
-        return sortedCosSim;
+        return sortedCosSim;        //Return map of urlId to score, ranked by score
 
-//        return new ArrayList<>(sortedCosSim.keySet());    //Return only urlId ranked by score
+//        return new ArrayList<>(sortedCosSim.keySet());    //Return only array with urlId only, ranked by score
     }
 
 
