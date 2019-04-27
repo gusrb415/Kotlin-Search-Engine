@@ -22,6 +22,7 @@ class SpiderMain {
         const val SPIDER_DB_NAME = "$BASE_URL/rockSpider"
         const val URL_WORDS_DB_NAME = "$BASE_URL/rockUrlWords"
         const val PAGE_RANK_DB_NAME = "$BASE_URL/rockPageRank"
+        const val URL_PARENT_DB_NAME = "$BASE_URL/rockUrlParent"
 
         private fun clearAllDB(vararg databases: RocksDB) {
             println("Clearing all databases")
@@ -69,9 +70,9 @@ class SpiderMain {
             // urlID -> list(wordID)
             val urlWordsDB = RocksDB(URL_WORDS_DB_NAME)
             val pageRankDB = RocksDB(PAGE_RANK_DB_NAME)
-
+            val urlParentDB = RocksDB(URL_PARENT_DB_NAME)
             val databases = arrayOf(
-                urlDB, urlInfoDB, urlChildDB,
+                urlDB, urlInfoDB, urlChildDB, urlParentDB,
                 spiderDB, wordDB, urlWordsDB, pageRankDB
             )
             clearAllDB(*databases)
@@ -115,6 +116,13 @@ class SpiderMain {
                 urlChildDB[urlDB[it]!!.toInt()] = childLinkIdList
             }
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
+
+            val linkMatrix = getMatrix(urlChildDB)
+            writeUrlParentDB(urlParentDB, linkMatrix)
+            val ranks = getPageRank(urlChildDB, linkMatrix)
+            ranks.forEach {
+                pageRankDB[it.key] = it.value
+            }
 
             println("Started crawling information")
             cseLinks.parallelStream().forEach { link ->
@@ -160,19 +168,17 @@ class SpiderMain {
                     println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
                 }
             }
-
-            val ranks = getPageRank(urlChildDB)
-            ranks.forEach {
-                pageRankDB[it.key] = it.value
-            }
             closeAllDB(*databases)
         }
 
-        private fun getPageRank(urlChildDB: RocksDB): Map<String, Double> {
+        private fun writeUrlParentDB(urlParentDB: RocksDB, Linkmatrix: List<List<Double>>) {
+            
+        }
+
+        private fun getMatrix(urlChildDB: RocksDB): List<List<Double>> {
             val keys = urlChildDB.getAllKeys().sorted()
             val size = keys.size
-            var rank = MutableList(size) {1.0}
-            var finalMatrix = mutableListOf<MutableList<Double>>()
+            val finalMatrix = mutableListOf<MutableList<Double>>()
             keys.forEach {
                 val linkList =
                     CSVParser.parseFrom(urlChildDB[it]!!)
@@ -191,8 +197,14 @@ class SpiderMain {
                 }
                 finalMatrix.add(row)
             }
+            return finalMatrix
+        }
 
-            finalMatrix = transpose(finalMatrix)
+        private fun getPageRank(urlChildDB: RocksDB, linkMatrix: List<List<Double>>): Map<String, Double> {
+            val keys = urlChildDB.getAllKeys().sorted()
+            val size = keys.size
+            val finalMatrix = transpose(linkMatrix)
+            var rank = MutableList(size) {1.0}
             for(i in 0 until 40) {
                 // PR Formula = 0.15 + 0.85(Sum of incoming weight)
                 rank = addition(0.15, multiply(0.85, dot(finalMatrix, rank)))
