@@ -59,6 +59,7 @@ class SpiderMain {
             val rootLink = "https://www.cse.ust.hk/"
             // url -> urlID
             val urlDB = RocksDB(URL_DB_NAME)
+
             // urlID -> (title, date, size)
             val urlInfoDB = RocksDB(URL_INFO_DB_NAME)
             // urlID -> list(urlID)
@@ -69,6 +70,7 @@ class SpiderMain {
             val spiderDB = RocksDB(SPIDER_DB_NAME)
             // urlID -> list(wordID)
             val urlWordsDB = RocksDB(URL_WORDS_DB_NAME)
+
             val pageRankDB = RocksDB(PAGE_RANK_DB_NAME)
             val urlParentDB = RocksDB(URL_PARENT_DB_NAME)
             val databases = arrayOf(
@@ -119,7 +121,7 @@ class SpiderMain {
 
             println("Started calculating page rank and writing parent url DB")
             val linkMatrix = getMatrix(urlChildDB)
-            val keys = urlChildDB.getAllKeys()
+            val keys = urlChildDB.getAllKeys().map{it.toInt()}.sorted().map{it.toString()}
             writeUrlParentDB(keys, linkMatrix, urlParentDB)
             val ranks = getPageRank(keys, linkMatrix)
             ranks.forEach { pageRankDB[it.key] = it.value }
