@@ -129,6 +129,7 @@ public class Ranker {
     public List<String> rankDocs(String[] queryTerms) {
 
         Vector<String> queryTermIds = findWordId(queryTerms);
+        System.out.println(queryTermIds);
         Vector<String> docsWithQuery = findDocs(queryTermIds);
         System.out.println(docsWithQuery);
 

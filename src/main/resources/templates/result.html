@@ -10,7 +10,7 @@
 <body>
 <div class="container mt-4 mb-4">
     <div class="row">
-        <form class="col-12" action="#" th:action="@{/web}" th:object="${web}" method="post">
+        <form class="col-12" action="#" th:action="@{/result}" th:object="${web}" method="post">
             <div class="row text-center justify-content-center">
                 <label for="query"></label>
                 <input type="text" th:field="*{content}" class="col-4 mr-1 form-control" id="query">
@@ -21,7 +21,10 @@
 </div>
 <div class="container text-center justify-content-center">
     <h3>Search Result</h3>
-    <p th:text="${result}"></p>
+    <p th:text="${timeDiff}"></p>
+    <tr th:each="result : ${resultList}">
+        <td th:text="${result.title}"></td>
+    </tr>
     <!--<a href="/web">Submit another search</a>-->
 </div>
 </body>

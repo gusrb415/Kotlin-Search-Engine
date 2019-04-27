@@ -1,6 +1,7 @@
 package spring
 
 import util.Ranker
+import model.Result
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
 import org.springframework.validation.BindingResult
@@ -13,13 +14,13 @@ import util.HTMLParser
 class WebController {
     private val ranker = Ranker()
 
-    @RequestMapping("/")//default mapping
+    @RequestMapping("/")
     fun index(map: ModelMap): String {
         map.addAttribute("web", Web())
-        return "index" // return src/main/resources/templates/index.html
+        return "index"
     }
 
-    @PostMapping("/web")
+    @PostMapping("/result")
     fun webSubmit(@ModelAttribute web: Web, result: BindingResult, map: ModelMap): String {
         if(result.hasErrors()) return "index"
         val query = web.content
@@ -28,14 +29,17 @@ class WebController {
 
         //This is where you get query
         //Parse it, modify it do whatever then return
+        val startTime = System.currentTimeMillis()
         val rankedItems = ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray())
 
-        val sb = StringBuilder()
-        rankedItems.forEach {
-            sb.append(it).append('\n')
+        val resultList = mutableListOf<Result>()
+        for(i in 0 until Math.min(50, rankedItems.size)) {
+            resultList.add(Result(rankedItems[i]))
         }
 
-        map.addAttribute("result", if(rankedItems.isEmpty()) "No Result Found" else sb.toString())
-        return "result" // return src/main/resources/templates/result.html
+        val timeDiff = (System.currentTimeMillis() - startTime) / 1000.0
+        map.addAttribute("timeDiff", "${rankedItems.size} results found (%.2f seconds)".format(timeDiff))
+        map.addAttribute("resultList", resultList)
+        return "result"
     }
 }
