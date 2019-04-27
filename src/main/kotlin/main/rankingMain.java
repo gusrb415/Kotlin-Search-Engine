@@ -1,5 +1,6 @@
 package main;
 
+import org.apache.commons.lang3.ObjectUtils;
 import util.CSVParser;
 import util.RocksDB;
 
@@ -51,7 +52,11 @@ public class rankingMain {
     private List<String> getTermsFromDoc(String urlKey){
         // urlID -> list(wordID)
         RocksDB urlWordsDB = new RocksDB(URL_WORDS_DB_NAME);
-        return CSVParser.INSTANCE.parseFrom(urlWordsDB.get(urlKey));
+
+        List<String> result = CSVParser.INSTANCE.parseFrom(urlWordsDB.get(urlKey));
+
+        urlWordsDB.close();
+        return result;
     }
 
     //Function to find docs that contains at least one of the query terms
@@ -81,9 +86,6 @@ public class rankingMain {
 
     //Given termId and urlId count number of terms in doc
     private int countTermInDoc (String wordIdIn, String urlIdIn){
-        // urlID -> list(wordID)
-        RocksDB urlWordsDB = new RocksDB(URL_WORDS_DB_NAME);
-
         List<String> wordIdsInDoc = getTermsFromDoc(urlIdIn);
 
         int count = 0;
@@ -97,7 +99,7 @@ public class rankingMain {
     }
 
     //Returns query weight of term given a term id
-    //For now, just return 1.0 everytime.
+    //For now, just return 1.0 every time.
     private double getQueryWeight(String termId){
         return 1.0;
     }
@@ -127,13 +129,13 @@ public class rankingMain {
      * at least one of the query terms, sorted by descending order of cosSim values
      */
 
-    protected List<String> rankDocs(String[] queryTerms){
+    protected List<String> rankDocs(String[] queryTerms) {
 
         Vector<String> queryTermIds = findWordId(queryTerms);
         Vector<String> docsWithQuery = findDocs(queryTermIds);
         Map<String, Double> docCosSim = new HashMap<>();
 
-        for (String docId : docsWithQuery){
+        for (String docId : docsWithQuery) {
             docCosSim.put(docId, cosSim(docId, queryTermIds));
         }
 
@@ -146,10 +148,7 @@ public class rankingMain {
                         Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                                 (e1, e2) -> e2, LinkedHashMap::new));
 
-        List<String> result = new ArrayList<>();
-        result.addAll(sortedCosSim.keySet());
-
-        return result;
+        return new ArrayList<>(sortedCosSim.keySet());
     }
 
 
