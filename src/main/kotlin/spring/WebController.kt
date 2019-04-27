@@ -21,8 +21,8 @@ class WebController {
     private val urlDB = RocksDB(SpiderMain.URL_DB_NAME)
     private val urlInfo = RocksDB(SpiderMain.URL_INFO_DB_NAME)
     private val urlChildInfo = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
-    private val urlWords = RocksDB(SpiderMain.URL_WORDS_DB_NAME)
     private val pageRank = RocksDB(SpiderMain.PAGE_RANK_DB_NAME)
+    private val urlWordsDB = RocksDB(SpiderMain.URL_WORDS_DB_NAME)
 
     @RequestMapping("/")
     fun index(map: ModelMap): String {
@@ -44,7 +44,7 @@ class WebController {
             return "redirect:"
 
         val startTime = System.currentTimeMillis()
-        val rankedItems = ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray(), urlWords)
+        val rankedItems = ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray(), urlWordsDB, urlDB)
 
         val sb = StringBuilder()
         var count = 0

@@ -44,26 +44,46 @@ public class Ranker {
     }
 
     //Function to get list of terms from a doc
-    private List<String> getTermsFromDoc(String urlKey, RocksDB db){
+    private List<String> getTermsFromDoc(String urlKey, RocksDB urlWordsDB){
+
         // urlID -> list(wordID)
-        return CSVParser.INSTANCE.parseFrom(Objects.requireNonNull(db.get(urlKey)));
+        return CSVParser.INSTANCE.parseFrom(Objects.requireNonNull(urlWordsDB.get(urlKey)));
     }
 
     //Function to find docs that contains at least one of the query terms
-    private Vector<String> findDocs(Vector<String> queryTerms, RocksDB urlWordsDB){
+    private Vector<String> findDocs(Vector<String> queryTermIds, RocksDB urlWordsDB){
         // urlID -> list(wordID)
 
         List<String> urlKeys = urlWordsDB.getAllKeys();
         Vector<String> result = new Vector<>(0);
 
         for (String urlKey : urlKeys) {
-            for (String queryTerm : queryTerms) {
+            for (String queryTermId : queryTermIds) {
                 //For each link, check if any of the query term id is present
-                if (getTermsFromDoc(urlKey, urlWordsDB).indexOf(queryTerm) != -1) {
+                if (getTermsFromDoc(urlKey, urlWordsDB).indexOf(queryTermId) != -1) {
                     //Add to doc id to result if query term is in the doc
                     result.add(urlKey);
                     break;
                 }
+            }
+        }
+
+        return result;
+
+    }
+
+    //Find docs given a single query term
+    private Vector<String> findDocs(String queryTermId, RocksDB urlWordsDB){
+        // urlID -> list(wordID)
+
+        List<String> urlKeys = urlWordsDB.getAllKeys();
+        Vector<String> result = new Vector<>(0);
+
+        for (String urlKey : urlKeys) {
+            //For each link, check if any of the query term id is present
+            if (getTermsFromDoc(urlKey, urlWordsDB).indexOf(queryTermId) != -1) {
+                //Add to doc id to result if query term is in the doc
+                result.add(urlKey);
             }
         }
 
@@ -90,30 +110,69 @@ public class Ranker {
         return 1.0;
     }
 
-    //Given urlId and queryTermId calculate cosine similarity
-    private double cosSim(String urlId, Vector<String> queryTermIds, RocksDB urlWordsDB){
-        //dikQk stores Sum of all query terms (dik * qk) [Nominator of cosSim]
-        double dikQk = 0.0;
+    private int getDocCount(RocksDB urlDB){
+        return urlDB.getAllKeys().size();
+    }
 
-        //dik stores sum of all term frequency in doc squared
-        double dik = 0.0;
+    private double idf(String termId, RocksDB urlDB, RocksDB urlWordsDB){
+        return Math.log((getDocCount(urlDB) * 1.0 / findDocs(termId, urlWordsDB).size()))
+                / Math.log(2.0);
+    }
+
+    private double tf(String termId, String urlId, RocksDB urlWordsDB){
+        return countTermInDoc(termId, urlId, urlWordsDB);
+    }
+
+    private double tfIdf(String termId, String urlId, RocksDB urlDB, RocksDB urlWordsDB){
+
+        double tf = countTermInDoc(termId, urlId, urlWordsDB);
+        double idf = Math.log((getDocCount(urlDB) * 1.0 / findDocs(termId, urlWordsDB).size()))
+                / Math.log(2.0);
+
+        return tf * idf;
+
+    }
+
+
+    //Given urlId and queryTermId calculate cosine similarity
+    private double cosSim(String urlId, Vector<String> queryTermIds, RocksDB urlWordsDB, RocksDB urlDB){
+
+        System.out.print("Doc ID: ");
+        System.out.println(urlId);
+
+        //dikQk stores Sum of all query terms (dik * qk) [Inner product of document and query]
+        double dikQk = 0.0;
 
         //qk stores sum of all query term squared
         double qk = 0.0;
 
         for (String queryTermId : queryTermIds){
-            dikQk += countTermInDoc(queryTermId, urlId, urlWordsDB) * getQueryWeight(queryTermId);
-            dik += Math.pow(countTermInDoc(queryTermId, urlId, urlWordsDB), 2.0);
+            double idf = idf(queryTermId, urlDB, urlWordsDB);
+            dikQk += tf(queryTermId, urlId, urlWordsDB) * idf * getQueryWeight(queryTermId);
             qk += Math.pow(getQueryWeight(queryTermId), 2.0);
         }
 
-        System.out.print("Doc ID: ");
-        System.out.println(urlId);
+        //dik stores sum of all term frequency in doc squared
+        double dik = 0.0;
+        List<String> allTermIdsInDoc = getTermsFromDoc(urlId, urlWordsDB);
+
+        System.out.println(allTermIdsInDoc.size());
+        System.out.println(allTermIdsInDoc);
+
+        for (String termId : allTermIdsInDoc){
+            double idf = idf(termId, urlDB, urlWordsDB);
+            dik += Math.pow(tf(termId, urlId, urlWordsDB) * idf, 2.0);
+            System.out.println(dik);
+        }
+
+        dik = Math.sqrt(dik);
+        qk = Math.sqrt(qk);
+
         System.out.println(dikQk);
         System.out.println(dik);
         System.out.println(qk);
 
-        return dikQk / Math.sqrt(dik) * Math.sqrt(qk);
+        return dikQk / dik * qk;
 
     }
 
@@ -128,7 +187,7 @@ public class Ranker {
      * Contains docs with at least one of the query terms,
      * sorted by descending order of cosSim values
      */
-    public Map<String, Double> rankDocs(String[] queryTerms, RocksDB urlWordsDB) {
+    public Map<String, Double> rankDocs(String[] queryTerms, RocksDB urlWordsDB, RocksDB urlDB) {
         Vector<String> queryTermIds = findWordId(queryTerms);
         System.out.println(queryTermIds);
         Vector<String> docsWithQuery = findDocs(queryTermIds, urlWordsDB);
@@ -137,7 +196,7 @@ public class Ranker {
         Map<String, Double> docCosSim = new HashMap<>();
 
         for (String docId : docsWithQuery) {
-            docCosSim.put(docId, cosSim(docId, queryTermIds, urlWordsDB));
+            docCosSim.put(docId, cosSim(docId, queryTermIds, urlWordsDB, urlDB));
         }
 
         return docCosSim;
