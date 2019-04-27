@@ -155,6 +155,10 @@ class RocksDB(path: String) {
         put(urlId.toString(), CSVParser.parseTo(stringList))
     }
 
+    operator fun set(urlId: String, linkList: List<String>) {
+        put(urlId, CSVParser.parseTo(linkList))
+    }
+
     operator fun get(key: String?): String?{
         return try {
             String(rocksDB.get(key?.toByteArray() ?: throw NullPointerException()))

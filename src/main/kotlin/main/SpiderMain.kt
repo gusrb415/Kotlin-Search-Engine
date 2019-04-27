@@ -117,12 +117,13 @@ class SpiderMain {
             }
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
+            println("Started calculating page rank and writing parent url DB")
             val linkMatrix = getMatrix(urlChildDB)
-            writeUrlParentDB(urlParentDB, linkMatrix)
-            val ranks = getPageRank(urlChildDB, linkMatrix)
-            ranks.forEach {
-                pageRankDB[it.key] = it.value
-            }
+            val keys = urlChildDB.getAllKeys()
+            writeUrlParentDB(keys, linkMatrix, urlParentDB)
+            val ranks = getPageRank(keys, linkMatrix)
+            ranks.forEach { pageRankDB[it.key] = it.value }
+            println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
             println("Started crawling information")
             cseLinks.parallelStream().forEach { link ->
@@ -171,21 +172,26 @@ class SpiderMain {
             closeAllDB(*databases)
         }
 
-        private fun writeUrlParentDB(urlParentDB: RocksDB, Linkmatrix: List<List<Double>>) {
-            
+        private fun writeUrlParentDB(keys: List<String>, Linkmatrix: List<List<Double>>, urlParentDB: RocksDB) {
+            val linksList = mutableListOf<String>()
+            for(i in 0 until keys.size) {
+                linksList.clear()
+                for(j in 0 until Linkmatrix.size)
+                    if(Linkmatrix[i][j] > 0.0) linksList.add(keys[j])
+                urlParentDB[keys[i]] = linksList
+            }
         }
 
-        private fun getMatrix(urlChildDB: RocksDB): List<List<Double>> {
-            val keys = urlChildDB.getAllKeys().sorted()
+        fun getMatrix(urlChildDB: RocksDB): List<List<Double>> {
+            val keys = urlChildDB.getAllKeys().map{it.toInt()}.sorted()
             val size = keys.size
             val finalMatrix = mutableListOf<MutableList<Double>>()
             keys.forEach {
                 val linkList =
-                    CSVParser.parseFrom(urlChildDB[it]!!)
+                    CSVParser.parseFrom(urlChildDB[it.toString()]!!)
                         .filter { link -> link != "" }
                         .map { link -> link.toInt() }
                         .filter { link -> link < size }
-                        .sorted()
                 val row = MutableList(size) {0.0}
                 var sum = 0
                 for (each in linkList) {
@@ -200,8 +206,7 @@ class SpiderMain {
             return finalMatrix
         }
 
-        private fun getPageRank(urlChildDB: RocksDB, linkMatrix: List<List<Double>>): Map<String, Double> {
-            val keys = urlChildDB.getAllKeys().sorted()
+        private fun getPageRank(keys: List<String>, linkMatrix: List<List<Double>>): Map<String, Double> {
             val size = keys.size
             val finalMatrix = transpose(linkMatrix)
             var rank = MutableList(size) {1.0}
