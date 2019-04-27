@@ -179,7 +179,7 @@ class SpiderMain {
             for(i in 0 until keys.size) {
                 linksList.clear()
                 for(j in 0 until Linkmatrix.size)
-                    if(Linkmatrix[i][j] > 0.0) linksList.add(keys[j])
+                    if(Linkmatrix[j][i] > 0.0) linksList.add(keys[j])
                 urlParentDB[keys[i]] = linksList
             }
         }

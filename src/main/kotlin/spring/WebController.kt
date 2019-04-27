@@ -21,9 +21,9 @@ class WebController {
     private val urlDB = RocksDB(SpiderMain.URL_DB_NAME)
     private val urlInfo = RocksDB(SpiderMain.URL_INFO_DB_NAME)
     private val urlChildInfo = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
+    private val urlParentInfo = RocksDB(SpiderMain.URL_PARENT_DB_NAME)
     private val pageRank = RocksDB(SpiderMain.PAGE_RANK_DB_NAME)
     private val urlWordsDB = RocksDB(SpiderMain.URL_WORDS_DB_NAME)
-
     @RequestMapping("/")
     fun index(map: ModelMap): String {
         map.addAttribute("web", Web())
@@ -67,10 +67,18 @@ class WebController {
             val score = "%.4f".format(rankedItem.value)
             val pageRank = "%.4f".format(pageRank[urlId]!!.toDouble())
             val childLinks = CSVParser.parseFrom(urlChildInfo[urlId]!!)
-            val tempSb = StringBuilder()
+            val childUrlSb = StringBuilder()
             childLinks.forEach {
                 val url = urlDB.getKey(it)
-                tempSb.append("""
+                childUrlSb.append("""
+                    <a href="$url" rel="nofollow" target="_blank">$url</a><br>
+                """.trimMargin())
+            }
+            val parentLinks = CSVParser.parseFrom(urlParentInfo[urlId]!!)
+            val parentUrlSb = StringBuilder()
+            parentLinks.forEach {
+                val url = urlDB.getKey(it)
+                parentUrlSb.append("""
                     <a href="$url" rel="nofollow" target="_blank">$url</a><br>
                 """.trimMargin())
             }
@@ -90,10 +98,10 @@ class WebController {
                 Keywords
                 </td>
                 <td>
-                ParentLinks
+                $parentUrlSb
                 </td>
                 <td>
-                $tempSb
+                $childUrlSb
                 </td>
                 </tr>
             """.trimIndent())
