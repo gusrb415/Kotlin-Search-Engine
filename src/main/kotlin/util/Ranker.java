@@ -171,9 +171,9 @@ public class Ranker {
             qk += Math.pow(getQueryWeight(queryTermId), 2.0);
         }
 
-        if (dikQk == 0 || qk == 0){
-            return 0.0;
-        }
+//        if (dikQk == 0 || qk == 0){
+//            return 0.0;
+//        }
 
         //dik stores sum of all term frequency in doc squared
         double dik = 0.0;
