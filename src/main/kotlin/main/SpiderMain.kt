@@ -161,17 +161,14 @@ class SpiderMain {
                 }
             }
 
-            val ranks = getPageRank()
+            val ranks = getPageRank(urlChildDB)
             ranks.forEach {
                 pageRankDB[it.key] = it.value
             }
-
             closeAllDB(*databases)
-
         }
 
-        private fun getPageRank(): Map<String, Double> {
-            val urlChildDB = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
+        private fun getPageRank(urlChildDB: RocksDB): Map<String, Double> {
             val keys = urlChildDB.getAllKeys().sorted()
             val size = keys.size
             var rank = MutableList(size) {1.0}
@@ -194,7 +191,6 @@ class SpiderMain {
                 }
                 finalMatrix.add(row)
             }
-            urlChildDB.close()
 
             finalMatrix = transpose(finalMatrix)
             for(i in 0 until 40) {
