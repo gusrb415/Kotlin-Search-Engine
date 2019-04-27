@@ -29,11 +29,13 @@ class WebController {
         //This is where you get query
         //Parse it, modify it do whatever then return
         val rankedItems = ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray())
+
         val sb = StringBuilder()
         rankedItems.forEach {
-            sb.append(sb).append('\n')
+            sb.append(it).append('\n')
         }
-        map.addAttribute("result", sb.toString())
+
+        map.addAttribute("result", if(rankedItems.isEmpty()) "No Result Found" else sb.toString())
         return "result" // return src/main/resources/templates/result.html
     }
 }

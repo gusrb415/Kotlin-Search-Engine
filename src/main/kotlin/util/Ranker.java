@@ -36,11 +36,11 @@ public class Ranker {
         RocksDB wordDB = new RocksDB(SpiderMain.WORD_DB_NAME);
         Vector<String> result = new Vector<>(0);
         for (String inputWord : inputWords) {
-            if (wordDB.getKey(inputWord) == null){
+            if (wordDB.get(inputWord) == null){
                 //Query term not found in any docs; for now just ignore
                 break;
             } else {
-                result.add(wordDB.getKey(inputWord));
+                result.add(wordDB.get(inputWord));
             }
         }
         wordDB.close();
@@ -50,13 +50,9 @@ public class Ranker {
     }
 
     //Function to get list of terms from a doc
-    private List<String> getTermsFromDoc(String urlKey){
+    private List<String> getTermsFromDoc(String urlKey, RocksDB db){
         // urlID -> list(wordID)
-        RocksDB urlWordsDB = new RocksDB(SpiderMain.URL_WORDS_DB_NAME);
-
-        List<String> result = CSVParser.INSTANCE.parseFrom(Objects.requireNonNull(urlWordsDB.get(urlKey)));
-
-        urlWordsDB.close();
+        List<String> result = CSVParser.INSTANCE.parseFrom(Objects.requireNonNull(db.get(urlKey)));
         return result;
     }
 
@@ -71,7 +67,7 @@ public class Ranker {
         for (String urlKey : urlKeys) {
             for (String queryTerm : queryTerms) {
                 //For each link, check if any of the query term id is present
-                if (getTermsFromDoc(urlKey).indexOf(queryTerm) != -1) {
+                if (getTermsFromDoc(urlKey, urlWordsDB).indexOf(queryTerm) != -1) {
                     //Add to doc id to result if query term is in the doc
                     result.add(urlKey);
                     break;
@@ -87,8 +83,9 @@ public class Ranker {
 
     //Given termId and urlId count number of terms in doc
     private int countTermInDoc (String wordIdIn, String urlIdIn){
-        List<String> wordIdsInDoc = getTermsFromDoc(urlIdIn);
-
+        RocksDB urlWordsDB = new RocksDB(SpiderMain.URL_WORDS_DB_NAME);
+        List<String> wordIdsInDoc = getTermsFromDoc(urlIdIn, urlWordsDB);
+        urlWordsDB.close();
         int count = 0;
 
         for (String wordId : wordIdsInDoc){
@@ -133,6 +130,8 @@ public class Ranker {
 
         Vector<String> queryTermIds = findWordId(queryTerms);
         Vector<String> docsWithQuery = findDocs(queryTermIds);
+        System.out.println(docsWithQuery);
+
         Map<String, Double> docCosSim = new HashMap<>();
 
         for (String docId : docsWithQuery) {
