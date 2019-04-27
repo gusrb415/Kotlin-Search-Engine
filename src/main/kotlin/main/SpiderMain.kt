@@ -66,8 +66,10 @@ class SpiderMain {
             val urlChildDB = RocksDB(URL_CHILD_DB_NAME)
             // word -> wordID
             val wordDB = RocksDB(WORD_DB_NAME)
+
             // wordID -> list(urlID, position)
             val spiderDB = RocksDB(SPIDER_DB_NAME)
+
             // urlID -> list(wordID)
             val urlWordsDB = RocksDB(URL_WORDS_DB_NAME)
 
