@@ -119,8 +119,27 @@ public class Ranker {
                 / Math.log(2.0);
     }
 
-    private double tf(String termId, String urlId, RocksDB urlWordsDB){
-        return countTermInDoc(termId, urlId, urlWordsDB);
+    private int tf(String termId, String urlId, RocksDB spiderDB){
+
+        int tf = 0;
+
+        if (spiderDB.get(termId) == null){
+            return 0;
+        }
+
+        String[] pairs = spiderDB.get(termId).split("d");
+        for (String pair : pairs) {
+            String[] keyValue = pair.split(" ");
+
+            if (keyValue[0].equals(urlId)){
+                tf++;
+            }
+        }
+        System.out.println(tf);
+        return tf;
+
+
+//        return countTermInDoc(termId, urlId, urlWordsDB);
     }
 
     private double tfIdf(String termId, String urlId, RocksDB urlDB, RocksDB urlWordsDB){
@@ -135,7 +154,7 @@ public class Ranker {
 
 
     //Given urlId and queryTermId calculate cosine similarity
-    private double cosSim(String urlId, Vector<String> queryTermIds, RocksDB urlWordsDB, RocksDB urlDB){
+    private double cosSim(String urlId, Vector<String> queryTermIds, RocksDB urlWordsDB, RocksDB urlDB, RocksDB spiderDB){
 
         System.out.print("Doc ID: ");
         System.out.println(urlId);
@@ -166,8 +185,8 @@ public class Ranker {
 
         for (String termId : allUniqueTermsInDoc){
             double idf = idf(termId, urlDB, urlWordsDB);
-            dik += Math.pow(tf(termId, urlId, urlWordsDB) * idf, 2.0);
-            System.out.println(dik);
+
+            dik += Math.pow(tf(termId, urlId, spiderDB) * idf, 2.0);
         }
 
         dik = Math.sqrt(dik);
@@ -192,7 +211,7 @@ public class Ranker {
      * Contains docs with at least one of the query terms,
      * sorted by descending order of cosSim values
      */
-    public Map<String, Double> rankDocs(String[] queryTerms, RocksDB urlWordsDB, RocksDB urlDB) {
+    public Map<String, Double> rankDocs(String[] queryTerms, RocksDB urlWordsDB, RocksDB urlDB, RocksDB spiderDB) {
         Vector<String> queryTermIds = findWordId(queryTerms);
         System.out.println(queryTermIds);
         Vector<String> docsWithQuery = findDocs(queryTermIds, urlWordsDB);
@@ -201,7 +220,7 @@ public class Ranker {
         Map<String, Double> docCosSim = new HashMap<>();
 
         for (String docId : docsWithQuery) {
-            docCosSim.put(docId, cosSim(docId, queryTermIds, urlWordsDB, urlDB));
+            docCosSim.put(docId, cosSim(docId, queryTermIds, urlWordsDB, urlDB, spiderDB));
         }
 
         return docCosSim;
