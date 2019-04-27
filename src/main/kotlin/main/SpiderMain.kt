@@ -1,8 +1,8 @@
 package main
 
+import util.CSVParser
 import util.HTMLParser
 import util.RocksDB
-import java.lang.NullPointerException
 import java.net.URL
 
 class SpiderMain {
@@ -21,6 +21,7 @@ class SpiderMain {
         const val WORD_DB_NAME = "$BASE_URL/rockWord"
         const val SPIDER_DB_NAME = "$BASE_URL/rockSpider"
         const val URL_WORDS_DB_NAME = "$BASE_URL/rockUrlWords"
+        const val PAGE_RANK_DB_NAME = "$BASE_URL/rockPageRank"
 
         private fun clearAllDB(vararg databases: RocksDB) {
             println("Clearing all databases")
@@ -67,7 +68,12 @@ class SpiderMain {
             val spiderDB = RocksDB(SPIDER_DB_NAME)
             // urlID -> list(wordID)
             val urlWordsDB = RocksDB(URL_WORDS_DB_NAME)
-            val databases = arrayOf(urlDB, urlInfoDB, urlChildDB, spiderDB, wordDB, urlWordsDB)
+            val pageRankDB = RocksDB(PAGE_RANK_DB_NAME)
+
+            val databases = arrayOf(
+                urlDB, urlInfoDB, urlChildDB,
+                spiderDB, wordDB, urlWordsDB, pageRankDB
+            )
             clearAllDB(*databases)
 
             // Retrieve all links under the root link recursively
@@ -155,7 +161,87 @@ class SpiderMain {
                 }
             }
 
+            val ranks = getPageRank()
+            ranks.forEach {
+                pageRankDB[it.key] = it.value
+            }
+
             closeAllDB(*databases)
+
+        }
+
+        private fun getPageRank(): Map<String, Double> {
+            val urlChildDB = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
+            val keys = urlChildDB.getAllKeys().sorted()
+            val size = keys.size
+            var rank = MutableList(size) {1.0}
+            var finalMatrix = mutableListOf<MutableList<Double>>()
+            keys.forEach {
+                val linkList =
+                    CSVParser.parseFrom(urlChildDB[it]!!)
+                        .filter { link -> link != "" }
+                        .map { link -> link.toInt() }
+                        .filter { link -> link < size }
+                        .sorted()
+                val row = MutableList(size) {0.0}
+                var sum = 0
+                for (each in linkList) {
+                    row[each] += 1.0
+                    sum += 1
+                }
+                for (each in linkList) {
+                    row[each] /= sum.toDouble()
+                }
+                finalMatrix.add(row)
+            }
+            urlChildDB.close()
+
+            finalMatrix = transpose(finalMatrix)
+            for(i in 0 until 40) {
+                // PR Formula = 0.15 + 0.85(Sum of incoming weight)
+                rank = addition(0.15, multiply(0.85, dot(finalMatrix, rank)))
+            }
+
+            val map = mutableMapOf<String, Double>()
+            for (i in 0 until keys.size) {
+                map[keys[i]] = rank[i]
+            }
+            return map
+        }
+
+        private fun addition(index: Double, secondMatrix: MutableList<Double>): MutableList<Double> {
+            for (i in 0 until secondMatrix.size)
+                secondMatrix[i] += index
+            return secondMatrix
+        }
+
+        private fun multiply(index: Double, secondMatrix: MutableList<Double>): MutableList<Double> {
+            for (i in 0 until secondMatrix.size)
+                secondMatrix[i] *= index
+            return secondMatrix
+        }
+
+        private fun dot(firstMatrix: List<List<Double>>, secondMatrix: List<Double>): MutableList<Double> {
+            val result = mutableListOf<Double>()
+            firstMatrix.forEach {
+                var sum = 0.0
+                for (i in 0 until it.size) {
+                    sum += it[i] * secondMatrix[i]
+                }
+                result.add(sum)
+            }
+            return result
+        }
+
+        private fun <E> transpose(matrix: List<List<E>>): MutableList<MutableList<E>>{
+            val newMatrix = mutableListOf<MutableList<E>>()
+            for(i in 0 until matrix.size) {
+                newMatrix.add(mutableListOf())
+                for(j in 0 until matrix[i].size) {
+                    newMatrix[i].add(matrix[j][i])
+                }
+            }
+            return newMatrix
         }
     }
 }

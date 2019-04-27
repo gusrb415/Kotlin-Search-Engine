@@ -46,12 +46,8 @@ object HTMLParser {
             .replace("\\s".toRegex(), " ")
     }
 
-    fun extractText(url: String): List<String> {
-        val bean = StringBean()
-        bean.url = url
-        bean.links = false
-        val contents = bean.strings
-        val processedText = processText(contents)
+    fun tokenize(str: String): List<String> {
+        val processedText = processText(str)
         val words = StringTokenizer(processedText)
         val strList = mutableListOf<String>()
         while (words.hasMoreTokens()) {
@@ -60,6 +56,13 @@ object HTMLParser {
                 strList.add(stem(word))
         }
         return strList
+    }
+
+    fun extractText(url: String): List<String> {
+        val bean = StringBean()
+        bean.url = url
+        bean.links = false
+        return tokenize(bean.strings)
     }
 
     fun extractLink(url: String, filter: String? = null, self: Boolean = true): List<URL> {

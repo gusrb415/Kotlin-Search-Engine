@@ -140,6 +140,10 @@ class RocksDB(path: String) {
         put(url, docID.toString())
     }
 
+    operator fun set(docId: String, rank: Double) {
+        put(docId, rank.toString())
+    }
+
     operator fun set(url: String, triple: Triple<String, String, String>) {
         val temp = CSVParser.parseTo(triple)
         put(url, temp)
