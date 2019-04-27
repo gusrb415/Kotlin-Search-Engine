@@ -152,14 +152,19 @@ public class Ranker {
             qk += Math.pow(getQueryWeight(queryTermId), 2.0);
         }
 
+        if (dikQk == 0 || qk == 0){
+            return 0.0;
+        }
+
         //dik stores sum of all term frequency in doc squared
         double dik = 0.0;
         List<String> allTermIdsInDoc = getTermsFromDoc(urlId, urlWordsDB);
+        List<String> allUniqueTermsInDoc = allTermIdsInDoc.stream().distinct().collect(Collectors.toList());
 
-        System.out.println(allTermIdsInDoc.size());
-        System.out.println(allTermIdsInDoc);
+        System.out.println(allUniqueTermsInDoc.size());
+        System.out.println(allUniqueTermsInDoc);
 
-        for (String termId : allTermIdsInDoc){
+        for (String termId : allUniqueTermsInDoc){
             double idf = idf(termId, urlDB, urlWordsDB);
             dik += Math.pow(tf(termId, urlId, urlWordsDB) * idf, 2.0);
             System.out.println(dik);
