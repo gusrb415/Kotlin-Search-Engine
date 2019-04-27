@@ -28,8 +28,12 @@ class WebController {
 
         //This is where you get query
         //Parse it, modify it do whatever then return
-        ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray())
-        map.addAttribute("result", "this is the result string with $query")
+        val rankedItems = ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray())
+        val sb = StringBuilder()
+        rankedItems.forEach {
+            sb.append(sb).append('\n')
+        }
+        map.addAttribute("result", sb.toString())
         return "result" // return src/main/resources/templates/result.html
     }
 }
