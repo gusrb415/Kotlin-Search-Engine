@@ -22,10 +22,7 @@
 <div class="container text-center justify-content-center">
     <h3>Search Result</h3>
     <p th:text="${timeDiff}"></p>
-    <tr th:each="result : ${resultList}">
-        <td th:text="${result.title}"></td>
-    </tr>
-    <!--<a href="/web">Submit another search</a>-->
+    <div class="container-fluid" th:utext="${result}"></div>
 </div>
 </body>
 </html>
