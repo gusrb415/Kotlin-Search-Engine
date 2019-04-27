@@ -114,8 +114,14 @@ public class Ranker {
      * Given an array of queryTerms, return a list of DocIds containing
      * at least one of the query terms, sorted by descending order of cosSim values
      */
-    public List<String> rankDocs(String[] queryTerms, RocksDB urlWordsDB) {
+//    public List<String> rankDocs(String[] queryTerms, RocksDB urlWordsDB) {
 
+    /*
+     * Given an array of queryTerms, return a map of DocIds to score.
+     * Contains docs with at least one of the query terms,
+     * sorted by descending order of cosSim values
+     */
+    public Map<String, Double> rankDocs(String[] queryTerms, RocksDB urlWordsDB) {
         Vector<String> queryTermIds = findWordId(queryTerms);
         System.out.println(queryTermIds);
         Vector<String> docsWithQuery = findDocs(queryTermIds, urlWordsDB);
@@ -136,7 +142,9 @@ public class Ranker {
                         Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                                 (e1, e2) -> e2, LinkedHashMap::new));
 
-        return new ArrayList<>(sortedCosSim.keySet());
+        return sortedCosSim;
+
+//        return new ArrayList<>(sortedCosSim.keySet());    //Return only urlId ranked by score
     }
 
 
