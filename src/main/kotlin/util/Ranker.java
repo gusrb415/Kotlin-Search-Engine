@@ -77,7 +77,7 @@ public class Ranker {
         int count = 0;
 
         for (String wordId : wordIdsInDoc){
-            if (wordId.equals(wordIdIn))
+            if (wordId.equalsIgnoreCase(wordIdIn))
                 count++;
         }
 
@@ -103,10 +103,17 @@ public class Ranker {
 
         for (String queryTermId : queryTermIds){
             dikQk += countTermInDoc(queryTermId, urlId, urlWordsDB) * getQueryWeight(queryTermId);
-            dik += Math.pow(countTermInDoc(queryTermId, urlId, urlWordsDB), 2);
-            qk += Math.pow(getQueryWeight(queryTermId), 2);
+            dik += Math.pow(countTermInDoc(queryTermId, urlId, urlWordsDB), 2.0);
+            qk += Math.pow(getQueryWeight(queryTermId), 2.0);
         }
-        return dikQk / Math.sqrt(dik * qk);
+
+        System.out.print("Doc ID: ");
+        System.out.println(urlId);
+        System.out.println(dikQk);
+        System.out.println(dik);
+        System.out.println(qk);
+
+        return dikQk / Math.sqrt(dik) * Math.sqrt(qk);
 
     }
 
@@ -133,6 +140,8 @@ public class Ranker {
             docCosSim.put(docId, cosSim(docId, queryTermIds, urlWordsDB));
         }
 
+        return docCosSim;
+/*
         //Sort by values (cosine similarities)
         Map<String, Double> sortedCosSim = docCosSim
                 .entrySet()
@@ -145,6 +154,7 @@ public class Ranker {
         return sortedCosSim;        //Return map of urlId to score, ranked by score
 
 //        return new ArrayList<>(sortedCosSim.keySet());    //Return only array with urlId only, ranked by score
+*/
     }
 
 
