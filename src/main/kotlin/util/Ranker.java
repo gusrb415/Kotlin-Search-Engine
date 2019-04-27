@@ -1,16 +1,10 @@
 package util;
 
 import main.SpiderMain;
-import org.apache.commons.lang3.ObjectUtils;
-import util.CSVParser;
-import util.RocksDB;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Ranker {
-
-
     //Calculate Cosine Similarity of Each Doc
 
     /*
@@ -52,14 +46,12 @@ public class Ranker {
     //Function to get list of terms from a doc
     private List<String> getTermsFromDoc(String urlKey, RocksDB db){
         // urlID -> list(wordID)
-        List<String> result = CSVParser.INSTANCE.parseFrom(Objects.requireNonNull(db.get(urlKey)));
-        return result;
+        return CSVParser.INSTANCE.parseFrom(Objects.requireNonNull(db.get(urlKey)));
     }
 
     //Function to find docs that contains at least one of the query terms
-    private Vector<String> findDocs(Vector<String> queryTerms){
+    private Vector<String> findDocs(Vector<String> queryTerms, RocksDB urlWordsDB){
         // urlID -> list(wordID)
-        RocksDB urlWordsDB = new RocksDB(SpiderMain.URL_WORDS_DB_NAME);
 
         List<String> urlKeys = urlWordsDB.getAllKeys();
         Vector<String> result = new Vector<>(0);
@@ -75,17 +67,13 @@ public class Ranker {
             }
         }
 
-        urlWordsDB.close();
-
         return result;
 
     }
 
     //Given termId and urlId count number of terms in doc
-    private int countTermInDoc (String wordIdIn, String urlIdIn){
-        RocksDB urlWordsDB = new RocksDB(SpiderMain.URL_WORDS_DB_NAME);
+    private int countTermInDoc (String wordIdIn, String urlIdIn, RocksDB urlWordsDB){
         List<String> wordIdsInDoc = getTermsFromDoc(urlIdIn, urlWordsDB);
-        urlWordsDB.close();
         int count = 0;
 
         for (String wordId : wordIdsInDoc){
@@ -103,7 +91,7 @@ public class Ranker {
     }
 
     //Given urlId and queryTermId calculate cosine similarity
-    private double cosSim(String urlId, Vector<String> queryTermIds){
+    private double cosSim(String urlId, Vector<String> queryTermIds, RocksDB urlWordsDB){
         //dikQk stores Sum of all query terms (dik * qk) [Nominator of cosSim]
         double dikQk = 0.0;
 
@@ -114,8 +102,8 @@ public class Ranker {
         double qk = 0.0;
 
         for (String queryTermId : queryTermIds){
-            dikQk += countTermInDoc(queryTermId, urlId) * getQueryWeight(queryTermId);
-            dik += Math.pow(countTermInDoc(queryTermId, urlId), 2);
+            dikQk += countTermInDoc(queryTermId, urlId, urlWordsDB) * getQueryWeight(queryTermId);
+            dik += Math.pow(countTermInDoc(queryTermId, urlId, urlWordsDB), 2);
             qk += Math.pow(getQueryWeight(queryTermId), 2);
         }
         return dikQk / Math.sqrt(dik * qk);
@@ -126,17 +114,17 @@ public class Ranker {
      * Given an array of queryTerms, return a list of DocIds containing
      * at least one of the query terms, sorted by descending order of cosSim values
      */
-    public List<String> rankDocs(String[] queryTerms) {
+    public List<String> rankDocs(String[] queryTerms, RocksDB urlWordsDB) {
 
         Vector<String> queryTermIds = findWordId(queryTerms);
         System.out.println(queryTermIds);
-        Vector<String> docsWithQuery = findDocs(queryTermIds);
+        Vector<String> docsWithQuery = findDocs(queryTermIds, urlWordsDB);
         System.out.println(docsWithQuery);
 
         Map<String, Double> docCosSim = new HashMap<>();
 
         for (String docId : docsWithQuery) {
-            docCosSim.put(docId, cosSim(docId, queryTermIds));
+            docCosSim.put(docId, cosSim(docId, queryTermIds, urlWordsDB));
         }
 
         //Sort by values (cosine similarities)
