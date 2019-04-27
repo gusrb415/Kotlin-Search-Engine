@@ -45,7 +45,10 @@ class WebController {
 
         val startTime = System.currentTimeMillis()
         val rankedItems = ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray(), urlWordsDB, urlDB)
-
+        val resultList = mutableListOf<Pair<String, Double>>()
+        rankedItems.forEach { t, u -> resultList.add(Pair(t, u)) }
+        val sortedList = resultList.sortedBy { -it.second }
+        
         val sb = StringBuilder()
         var count = 0
         sb.append("""
@@ -62,9 +65,9 @@ class WebController {
                 </thead>
                 <tbody>
         """.trimIndent())
-        for (rankedItem in rankedItems) {
-            val urlId = rankedItem.key
-            val score = "%.4f".format(rankedItem.value)
+        for (rankedItem in sortedList) {
+            val urlId = rankedItem.first
+            val score = "%.4f".format(rankedItem.second)
             val pageRank = "%.4f".format(pageRank[urlId]!!.toDouble())
             val childLinks = CSVParser.parseFrom(urlChildInfo[urlId]!!)
             val childUrlSb = StringBuilder()
@@ -86,23 +89,25 @@ class WebController {
             val info = CSVParser.parseFrom(urlInfo[urlId]!!)
             sb.append("""
                 <tr>
-                <th scope="row">${++count}</th>
-                <td>Cos sim: $score<br>PageRank: $pageRank</td>
-                <td>
-                ${info[0]}<br>
-                <a href="$url" rel="nofollow" target="_blank">$url</a><br>
-                <b>Last-Modified:</b> ${buildDateFromLong(info[1].toLong())}<br>
-                <b>Size:</b> ${info[2]} Bytes
-                </td>
-                <td>
-                Keywords
-                </td>
-                <td>
-                $parentUrlSb
-                </td>
-                <td>
-                $childUrlSb
-                </td>
+                    <th scope="row">${++count}</th>
+                    <td>Cos sim: $score<br>
+                    PageRank: $pageRank<br>
+                    </td>
+                    <td>
+                    <a href="$url" rel="nofollow" target="_blank">${info[0]}</a><br>
+                    <a href="$url" rel="nofollow" target="_blank">$url</a><br>
+                    <b>Last-Modified:</b> ${buildDateFromLong(info[1].toLong())}<br>
+                    <b>Size:</b> ${info[2]} Bytes
+                    </td>
+                    <td>
+                    Keywords
+                    </td>
+                    <td>
+                    $parentUrlSb
+                    </td>
+                    <td>
+                    $childUrlSb
+                    </td>
                 </tr>
             """.trimIndent())
             if(count == 50) break

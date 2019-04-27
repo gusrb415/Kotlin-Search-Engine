@@ -184,7 +184,7 @@ class SpiderMain {
             }
         }
 
-        fun getMatrix(urlChildDB: RocksDB): List<List<Double>> {
+        private fun getMatrix(urlChildDB: RocksDB): List<List<Double>> {
             val keys = urlChildDB.getAllKeys().map{it.toInt()}.sorted()
             val size = keys.size
             val finalMatrix = mutableListOf<MutableList<Double>>()
