@@ -56,7 +56,7 @@ class WebController {
                 if (CSVParser.parseFrom(urlInfo[urlId]!!)[0].contains(it, true))
                     rankedItems[urlId] = score + meanScore
             }
-            val pageRankScore = pageRank[urlId]!!.toDouble() / maxPR * meanScore
+            val pageRankScore = pageRank[urlId]!!.toDouble() / maxPR * meanScore * 4
             rankedItems[urlId] = rankedItems[urlId]!! + pageRankScore
         }
 
