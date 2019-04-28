@@ -39,19 +39,31 @@ object HTMLParser {
         return Porter.stripAffixes(str)
     }
 
-    private fun processText(str: String): String {
+    private fun processText(str: String, query: Boolean): String {
         return str
-            .map { if(!(it.isDigit() || it.isLetter())) ' ' else it.toLowerCase()}
+            .map {
+                if(query && it == '"')
+                    '"'
+                else if(it.isDigit())
+                    ' '
+                else if (!it.isLetter())
+                    ' '
+                else
+                    it.toLowerCase()
+            }
             .joinToString("")
             .replace("\\s".toRegex(), " ")
     }
 
-    fun tokenize(str: String): List<String> {
-        val processedText = processText(str)
+    fun tokenize(str: String, query: Boolean=false): List<String> {
+        val processedText = processText(str, query)
         val words = StringTokenizer(processedText)
         val strList = mutableListOf<String>()
         while (words.hasMoreTokens()) {
             val word = words.nextToken()
+//            if(query && word.contains('"'))
+//                strList.add(word)
+//            else
             if(!isStopWord(word))
                 strList.add(stem(word))
         }

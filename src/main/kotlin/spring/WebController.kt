@@ -17,7 +17,6 @@ import java.util.*
 
 @Controller
 class WebController {
-    private val ranker = Ranker()
     private val urlDB = RocksDB(SpiderMain.URL_DB_NAME)
     private val urlInfo = RocksDB(SpiderMain.URL_INFO_DB_NAME)
     private val urlChildInfo = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
@@ -25,7 +24,10 @@ class WebController {
     private val pageRank = RocksDB(SpiderMain.PAGE_RANK_DB_NAME)
     private val urlWordsDB = RocksDB(SpiderMain.URL_WORDS_DB_NAME)
     private val spiderDB = RocksDB(SpiderMain.SPIDER_DB_NAME)
+    private val urlWordCountDB = RocksDB(SpiderMain.URL_WORD_COUNT_DB_NAME)
+    private val wordDB = RocksDB(SpiderMain.WORD_DB_NAME)
 
+    private val totalUrlSize = urlDB.getAllKeys().size
     @RequestMapping("/")
     fun index(map: ModelMap): String {
         map.addAttribute("web", Web())
@@ -46,10 +48,13 @@ class WebController {
             return "redirect:"
 
         val startTime = System.currentTimeMillis()
-        val rankedItems = ranker.rankDocs(HTMLParser.tokenize(query).toTypedArray(), urlWordsDB, urlDB, spiderDB)
+        val rankedItems = Ranker.rankDocs(HTMLParser.tokenize(query, true), spiderDB, wordDB)
         val resultList = mutableListOf<Pair<String, Double>>()
-        rankedItems.forEach { t, u -> resultList.add(Pair(t, u)) }
-        val sortedList = resultList.sortedBy { -it.second }
+        rankedItems.forEach { t, u ->
+            val termCount = CSVParser.parseFrom(urlWordCountDB[t]!!)[1]
+            resultList.add(Pair(t, u / termCount.toDouble()))
+        }
+        val sortedList = resultList.sortedByDescending { it.second }
         
         val sb = StringBuilder()
         var count = 0
@@ -60,7 +65,7 @@ class WebController {
                         <th scope="col">#</th>
                         <th scope="col">Score</th>
                         <th scope="col">Information</th>
-                        <th scope="col">Keyword Frequency</th>
+                        <th scope="col">Top-5 Frequency</th>
                         <th scope="col">Parent Link</th>
                         <th scope="col">Child Link</th>
                     </tr>
@@ -87,6 +92,13 @@ class WebController {
                     <a href="$url" rel="nofollow" target="_blank">$url</a><br>
                 """.trimMargin())
             }
+            val termCount = CSVParser.parseFrom(urlWordCountDB[urlId]!!)
+            val termCountSb = StringBuilder()
+            if(termCount.size > 1) {
+                for (i in 0 until Math.min(10, termCount.size) step 2) {
+                    termCountSb.append("${wordDB.getKey(termCount[i])}: ${termCount[i + 1]}<br>")
+                }
+            }
             val url = urlDB.getKey(urlId)
             val info = CSVParser.parseFrom(urlInfo[urlId]!!)
             sb.append("""
@@ -102,7 +114,7 @@ class WebController {
                     <b>Size:</b> ${info[2]} Bytes
                     </td>
                     <td>
-                    Keywords
+                    $termCountSb
                     </td>
                     <td>
                     $parentUrlSb

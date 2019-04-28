@@ -23,6 +23,8 @@ class SpiderMain {
         const val URL_WORDS_DB_NAME = "$BASE_URL/rockUrlWords"
         const val PAGE_RANK_DB_NAME = "$BASE_URL/rockPageRank"
         const val URL_PARENT_DB_NAME = "$BASE_URL/rockUrlParent"
+        const val URL_WORD_COUNT_DB_NAME = "$BASE_URL/rockUrlWordCount"
+        const val TF_IDF_DB_NAME = "$BASE_URL/rockTfIdf"
 
         private fun clearAllDB(vararg databases: RocksDB) {
             println("Clearing all databases")
@@ -59,25 +61,24 @@ class SpiderMain {
             val rootLink = "https://www.cse.ust.hk/"
             // url -> urlID
             val urlDB = RocksDB(URL_DB_NAME)
-
             // urlID -> (title, date, size)
             val urlInfoDB = RocksDB(URL_INFO_DB_NAME)
             // urlID -> list(urlID)
             val urlChildDB = RocksDB(URL_CHILD_DB_NAME)
             // word -> wordID
             val wordDB = RocksDB(WORD_DB_NAME)
-
             // wordID -> list(urlID, position)
             val spiderDB = RocksDB(SPIDER_DB_NAME)
-
             // urlID -> list(wordID)
             val urlWordsDB = RocksDB(URL_WORDS_DB_NAME)
 
             val pageRankDB = RocksDB(PAGE_RANK_DB_NAME)
             val urlParentDB = RocksDB(URL_PARENT_DB_NAME)
+            val urlWordCountDB = RocksDB(URL_WORD_COUNT_DB_NAME)
+
             val databases = arrayOf(
                 urlDB, urlInfoDB, urlChildDB, urlParentDB,
-                spiderDB, wordDB, urlWordsDB, pageRankDB
+                spiderDB, wordDB, urlWordsDB, pageRankDB, urlWordCountDB
             )
             clearAllDB(*databases)
 
@@ -129,6 +130,10 @@ class SpiderMain {
             ranks.forEach { pageRankDB[it.key] = it.value }
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
+            urlChildDB.close()
+            urlParentDB.close()
+            pageRankDB.close()
+
             println("Started crawling information")
             cseLinks.parallelStream().forEach { link ->
                 val title = HTMLParser.getTitle(link)
@@ -137,6 +142,7 @@ class SpiderMain {
                 urlInfoDB[urlDB[link]!!] = Triple(title, date, size)
             }
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
+            urlInfoDB.close()
 
             val wordSet = mutableSetOf<String>()
             val wordList = mutableMapOf<Int, List<String>>()
@@ -144,6 +150,7 @@ class SpiderMain {
             cseLinks.parallelStream().forEach { link ->
                 wordList[urlDB[link]!!.toInt()] = HTMLParser.extractText(link)
             }
+            urlDB.close()
 
             wordList.values.forEach {
                 wordSet.addAll(it)
@@ -161,19 +168,31 @@ class SpiderMain {
             println("Started Writing word ID and position to database")
             counter = 0
             wordList.keys.parallelStream().forEach { id ->
-                val words = wordList[id]!!
+                val wordCountMap = mutableMapOf<String, Int>()
+                val wordsToIds = wordList[id]!!.map { wordDB[it]!! }
                 var i = 0
-                val wordsToIds = words.map { wordDB[it]!! }
                 urlWordsDB[id] = wordsToIds.map { it.toInt() }
                 wordsToIds.forEach { wordId ->
+                    wordCountMap[wordId] = (wordCountMap[wordId] ?: 0) + 1
                     spiderDB[wordId] = Pair(id, i++)
                 }
-                if (++counter % 10 == 0) {
+                val countList = mutableListOf<Pair<String, String>>()
+                wordCountMap.forEach { t, u ->
+                    countList.add(Pair(t, u.toString()))
+                }
+                urlWordCountDB[id.toString()] = countList.sortedByDescending { it.second }.flatMap { it.toList() }
+                if (++counter % 50 == 0) {
+                    System.gc()
                     println("Currently wrote $counter websites to DB")
                     println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
                 }
             }
-            closeAllDB(*databases)
+            wordDB.close()
+            urlWordsDB.close()
+            spiderDB.close()
+            urlWordCountDB.close()
+
+            TfIdfMain.main(args)
         }
 
         private fun writeUrlParentDB(keys: List<String>, Linkmatrix: List<List<Double>>, urlParentDB: RocksDB) {
