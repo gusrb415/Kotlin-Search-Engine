@@ -27,7 +27,6 @@ class WebController {
     private val urlWordCountDB = RocksDB(SpiderMain.URL_WORD_COUNT_DB_NAME)
     private val wordDB = RocksDB(SpiderMain.WORD_DB_NAME)
 
-    private val totalUrlSize = urlDB.getAllKeys().size
     @RequestMapping("/")
     fun index(map: ModelMap): String {
         map.addAttribute("web", Web())
@@ -48,7 +47,19 @@ class WebController {
             return "redirect:"
 
         val startTime = System.currentTimeMillis()
-        val rankedItems = Ranker.rankDocs(HTMLParser.tokenize(query, true), spiderDB, wordDB)
+        val queryList = HTMLParser.tokenize(query, true)
+        val rankedItems = Ranker.rankDocs(queryList, spiderDB, wordDB).toMutableMap()
+        val meanScore = rankedItems.values.sum() / rankedItems.size
+        val maxPR = pageRank.getAllValues().map{it.toDouble()}.max()!!
+        rankedItems.forEach { urlId, score ->
+            queryList.forEach {
+                if (CSVParser.parseFrom(urlInfo[urlId]!!)[0].contains(it, true))
+                    rankedItems[urlId] = score + meanScore
+            }
+            val pageRankScore = pageRank[urlId]!!.toDouble() / maxPR * meanScore
+            rankedItems[urlId] = rankedItems[urlId]!! + pageRankScore
+        }
+
         val resultList = mutableListOf<Pair<String, Double>>()
         rankedItems.forEach { t, u ->
             val termCount = CSVParser.parseFrom(urlWordCountDB[t]!!)[1]
@@ -74,8 +85,7 @@ class WebController {
         """.trimIndent())
         for (rankedItem in sortedList) {
             val urlId = rankedItem.first
-            val score = "%.4f".format(rankedItem.second)
-            val pageRank = "%.4f".format(pageRank[urlId]!!.toDouble())
+            val score = "%.6f".format(rankedItem.second)
             val childLinks = CSVParser.parseFrom(urlChildInfo[urlId]!!)
             val childUrlSb = StringBuilder()
             childLinks.forEach {
@@ -104,8 +114,7 @@ class WebController {
             sb.append("""
                 <tr>
                     <th scope="row">${++count}</th>
-                    <td>Cos sim: $score<br>
-                    PageRank: $pageRank<br>
+                    <td>$score<br>
                     </td>
                     <td>
                     <a href="$url" rel="nofollow" target="_blank">${info[0]}</a><br>

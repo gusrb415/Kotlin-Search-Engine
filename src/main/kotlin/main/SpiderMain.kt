@@ -1,5 +1,6 @@
 package main
 
+import spring.Application
 import util.CSVParser
 import util.HTMLParser
 import util.RocksDB
@@ -33,13 +34,6 @@ class SpiderMain {
             }
         }
 
-        private fun closeAllDB(vararg databases: RocksDB) {
-            println("Closing all databases")
-            databases.forEach {
-                it.close()
-            }
-        }
-
         private fun recursivelyCrawlLinks(url: URL, filter: String,
                                           urlSet: MutableSet<URL>, visitedUrls: MutableSet<URL>? = null) {
             val visited = visitedUrls ?: mutableSetOf()
@@ -65,16 +59,19 @@ class SpiderMain {
             val urlInfoDB = RocksDB(URL_INFO_DB_NAME)
             // urlID -> list(urlID)
             val urlChildDB = RocksDB(URL_CHILD_DB_NAME)
+            // urlID -> list(urlID)
+            val urlParentDB = RocksDB(URL_PARENT_DB_NAME)
             // word -> wordID
             val wordDB = RocksDB(WORD_DB_NAME)
             // wordID -> list(urlID, position)
             val spiderDB = RocksDB(SPIDER_DB_NAME)
             // urlID -> list(wordID)
             val urlWordsDB = RocksDB(URL_WORDS_DB_NAME)
-
+            // urlID -> PageRank
             val pageRankDB = RocksDB(PAGE_RANK_DB_NAME)
-            val urlParentDB = RocksDB(URL_PARENT_DB_NAME)
+            // urlID -> list(wordID, count)
             val urlWordCountDB = RocksDB(URL_WORD_COUNT_DB_NAME)
+            // urlID -> list(wordID, tfidf)
 
             val databases = arrayOf(
                 urlDB, urlInfoDB, urlChildDB, urlParentDB,
@@ -133,6 +130,7 @@ class SpiderMain {
             urlChildDB.close()
             urlParentDB.close()
             pageRankDB.close()
+            System.gc()
 
             println("Started crawling information")
             cseLinks.parallelStream().forEach { link ->
@@ -143,6 +141,7 @@ class SpiderMain {
             }
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
             urlInfoDB.close()
+            System.gc()
 
             val wordSet = mutableSetOf<String>()
             val wordList = mutableMapOf<Int, List<String>>()
@@ -151,6 +150,7 @@ class SpiderMain {
                 wordList[urlDB[link]!!.toInt()] = HTMLParser.extractText(link)
             }
             urlDB.close()
+            System.gc()
 
             wordList.values.forEach {
                 wordSet.addAll(it)
@@ -165,6 +165,7 @@ class SpiderMain {
             println("Total number of ${counter - 1} unique words")
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
+            System.gc()
             println("Started Writing word ID and position to database")
             counter = 0
             wordList.keys.parallelStream().forEach { id ->
@@ -193,6 +194,8 @@ class SpiderMain {
             urlWordCountDB.close()
 
             TfIdfMain.main(args)
+
+            Application.main(args)
         }
 
         private fun writeUrlParentDB(keys: List<String>, Linkmatrix: List<List<Double>>, urlParentDB: RocksDB) {
