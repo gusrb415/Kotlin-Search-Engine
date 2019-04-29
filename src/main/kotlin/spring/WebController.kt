@@ -73,12 +73,12 @@ class WebController {
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th scope="col" style="width: 5%">#</th>
+                        <th scope="col" style="width: 3%">#</th>
                         <th scope="col" style="width: 10%">Score<br>(Cos+PR+Title)</th>
-                        <th scope="col" style="width: 25%">Information</th>
-                        <th scope="col" style="width: 10%">Top-5 Frequency</th>
-                        <th scope="col" style="width: 25%">Parent Link</th>
-                        <th scope="col" style="width: 25%">Child Link</th>
+                        <th scope="col" style="width: 19%">Information</th>
+                        <th scope="col" style="width: 8%">Top-5 Frequency</th>
+                        <th scope="col" style="width: 30%">Parent Link</th>
+                        <th scope="col" style="width: 30%">Child Link</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,19 +127,19 @@ class WebController {
                     $termCountSb
                     </td>
                     <td>
-                    <button class="btn btn-primary" type="button" data-toggle="collapse"
+                    <button class="btn btn-info" type="button" data-toggle="collapse"
+                    onclick="change(this.id)" id="colButton$classCounter"
                     data-target="#collapse$classCounter" aria-expanded="false" aria-controls="collapse$classCounter">
-                    Show Parent Urls</button><br>
-                    Total: ${parentLinks.size} urls<br>
+                    Show Parent Urls (${parentLinks.size} urls)</button>
                     <div class="collapse" id="collapse${classCounter++}">
                     $parentUrlSb
                     </div>
                     </td>
                     <td>
-                    <button class="btn btn-primary" type="button" data-toggle="collapse"
+                    <button class="btn btn-info" type="button" data-toggle="collapse"
+                    onclick="change(this.id)"id="colButton$classCounter"
                     data-target="#collapse$classCounter" aria-expanded="false" aria-controls="collapse$classCounter">
-                    Show Child Urls</button><br>
-                    Total: ${childLinks.size} urls<br>
+                    Show Child Urls (${childLinks.size} urls)</button>
                     <div class="collapse" id="collapse${classCounter++}">
                     $childUrlSb
                     </div>
