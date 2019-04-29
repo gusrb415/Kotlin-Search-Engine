@@ -40,9 +40,9 @@ class WebController {
 
     @PostMapping("/result")
     fun webSubmit(@ModelAttribute web: Web, result: BindingResult, map: ModelMap): String {
-        if(result.hasErrors()) return "redirect:"
+        if (result.hasErrors()) return "redirect:"
         val query = web.content
-        if(query.isNullOrEmpty())
+        if (query.isNullOrEmpty())
             return "redirect:"
 
         val startTime = System.currentTimeMillis()
@@ -51,7 +51,7 @@ class WebController {
         print("1st took ${(System.currentTimeMillis() - startTime) / 1000.0}, ")
 
         val meanScore = rankedItems.values.sum() / rankedItems.size
-        val maxPR = pageRank.getAllValues().map{it.toDouble()}.max() ?: 1.0
+        val maxPR = pageRank.getAllValues().map { it.toDouble() }.max() ?: 1.0
         rankedItems.forEach { urlId, score ->
             queryList.flatten().forEach {
                 if (CSVParser.parseFrom(urlInfo[urlId]!!)[0].contains(it, true))
@@ -67,10 +67,11 @@ class WebController {
             resultList.add(Pair(t, u / termCount.toDouble()))
         }
         var counter = 0
-        val sortedList = resultList.sortedByDescending { it.second }.map{ ++counter to it }
+        val sortedList = resultList.sortedByDescending { it.second }.map { ++counter to it }
 
         val sb = StringBuilder()
-        sb.append("""
+        sb.append(
+            """
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -83,36 +84,41 @@ class WebController {
                     </tr>
                 </thead>
                 <tbody>
-        """.trimIndent())
+        """.trimIndent()
+        )
         print("2nd took ${(System.currentTimeMillis() - startTime) / 1000.0}, ")
 
         val resultMap = mutableMapOf<Int, String>()
         sortedList.parallelStream().forEach { rankAndItem ->
-            var rank = rankAndItem.first
-            if(rank > 50) return@forEach
+            val rank = rankAndItem.first
+            if (rank > 50) return@forEach
             val urlId = rankAndItem.second.first
             val score = "%.6f".format(rankAndItem.second.second)
             val childLinks = CSVParser.parseFrom(urlChildInfo[urlId]!!)
             val childUrlSb = StringBuilder()
             childLinks.forEach {
                 val url = urlDB.getKey(it)
-                if(url != null)
-                    childUrlSb.append("""
+                if (url != null)
+                    childUrlSb.append(
+                        """
                         <a href="$url" rel="nofollow" target="_blank">$url</a><br>
-                    """.trimMargin())
+                    """.trimMargin()
+                    )
             }
             val parentLinks = CSVParser.parseFrom(urlParentInfo[urlId]!!)
             val parentUrlSb = StringBuilder()
             parentLinks.forEach {
                 val url = urlDB.getKey(it)
-                if(url != null)
-                    parentUrlSb.append("""
+                if (url != null)
+                    parentUrlSb.append(
+                        """
                         <a href="$url" rel="nofollow" target="_blank">$url</a><br>
-                    """.trimMargin())
+                    """.trimMargin()
+                    )
             }
             val termCount = CSVParser.parseFrom(urlWordCountDB[urlId]!!)
             val termCountSb = StringBuilder()
-            if(termCount.size > 1) {
+            if (termCount.size > 1) {
                 for (i in 0 until Math.min(10, termCount.size) step 2) {
                     termCountSb.append("${wordDB.getKey(termCount[i])}: ${termCount[i + 1]}<br>")
                 }
@@ -160,7 +166,7 @@ class WebController {
 
         val timeDiff = (System.currentTimeMillis() - startTime) / 1000.0
         map.addAttribute("timeDiff", "${rankedItems.size} results found (%.2f seconds)".format(timeDiff))
-        map.addAttribute("result", if(rankedItems.isEmpty()) "" else sb.toString().replace("\n", ""))
+        map.addAttribute("result", if (rankedItems.isEmpty()) "" else sb.toString().replace("\n", ""))
         return "result"
     }
 

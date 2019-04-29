@@ -20,11 +20,11 @@ class TfIdfMain {
             val urlSize = urls.size
             val logTwo = Math.log(2.0)
             val urlToLengthMap = mutableMapOf<String, Double>()
-            urls.parallelStream().forEach {urlId ->
+            urls.parallelStream().forEach { urlId ->
                 val wordCount = CSVParser.parseFrom(urlWordCountDB[urlId]!!)
                 val tfIdfList = mutableListOf<Pair<String, Double>>()
-                if(wordCount.size < 2) return@forEach
-                for(i in 0 until wordCount.size step 2) {
+                if (wordCount.size < 2) return@forEach
+                for (i in 0 until wordCount.size step 2) {
                     val word = wordCount[i]
                     val count = wordCount[i + 1]
 

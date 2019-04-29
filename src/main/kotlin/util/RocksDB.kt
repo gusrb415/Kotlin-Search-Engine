@@ -78,10 +78,10 @@ class RocksDB(path: String) {
                 .split("d")
                 .flatMap { it.split(" ") }
                 .filter { it != "" }
-                .map{ it.toInt() }
-            for(i in 0 until values.size step 2)
-                if(values[i] == docID) ++count
-            if(count != 0)
+                .map { it.toInt() }
+            for (i in 0 until values.size step 2)
+                if (values[i] == docID) ++count
+            if (count != 0)
                 map[key] = count
             iter.next()
         }
@@ -115,7 +115,7 @@ class RocksDB(path: String) {
         val iter = rocksDB.newIterator()
         iter.seekToFirst()
         while (iter.isValid) {
-            if(String(iter.value()) == value)
+            if (String(iter.value()) == value)
                 return String(iter.key())
             iter.next()
         }
@@ -162,7 +162,7 @@ class RocksDB(path: String) {
         put(urlId, CSVParser.parseTo(linkList))
     }
 
-    operator fun get(key: String?): String?{
+    operator fun get(key: String?): String? {
         return try {
             String(rocksDB.get(key?.toByteArray() ?: throw NullPointerException()))
         } catch (e: Exception) {
@@ -170,7 +170,7 @@ class RocksDB(path: String) {
         }
     }
 
-    operator fun get(key: ByteArray?): ByteArray?{
+    operator fun get(key: ByteArray?): ByteArray? {
         return try {
             rocksDB.get(key ?: throw NullPointerException())
         } catch (e: Exception) {

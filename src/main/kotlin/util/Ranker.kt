@@ -55,7 +55,7 @@ object Ranker {
                                     break
                                 }
                             }
-                            if(found == size)
+                            if (found == size)
                                 break
                         }
 

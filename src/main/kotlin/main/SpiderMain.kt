@@ -100,7 +100,7 @@ class SpiderMain {
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
             var counter = 0
-            urlSet.toSortedSet(compareBy { it.toExternalForm() }).map{it.toExternalForm()}.forEach {
+            urlSet.toSortedSet(compareBy { it.toExternalForm() }).map { it.toExternalForm() }.forEach {
                 urlDB[it] = counter++
             }
 
@@ -118,7 +118,7 @@ class SpiderMain {
 //                urlDB[it] = counter++
 //            }
 
-            val cseLinks = urlSet.map{it.toExternalForm()}.toList()
+            val cseLinks = urlSet.map { it.toExternalForm() }.toList()
             cseLinks.parallelStream().forEach {
                 val childLinks = HTMLParser.extractLink(it, filter = rootLink, self = false)
                 val childLinkIdList = mutableListOf<Int>()

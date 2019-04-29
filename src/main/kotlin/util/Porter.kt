@@ -341,7 +341,8 @@ object Porter {
             return mutableStr
         if (mutableStr[mutableStr.length - 1] == 'l' && mutableStr[mutableStr.length - 2] == 'l' && measure(
                 mutableStr
-            ) > 1)
+            ) > 1
+        )
             if (measure(mutableStr) > 1) {/* measure(str)==measure(stem) if ends in vowel */
                 var tmp = ""
                 for (i in 0 until mutableStr.length - 1)
@@ -402,5 +403,4 @@ object Porter {
 
         return mutableStr
     } //stripAffixes
-
 }

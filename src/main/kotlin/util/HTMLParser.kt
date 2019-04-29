@@ -23,7 +23,7 @@ object HTMLParser {
             var data = resourceStream.read()
             val words = StringBuilder()
             while (data != -1) {
-                if(data.toChar() == '\n') {
+                if (data.toChar() == '\n') {
                     stopWords.add(words.toString())
                     words.clear()
                 } else {
@@ -47,7 +47,7 @@ object HTMLParser {
 
     private fun processText(str: String, query: Boolean): String {
         return str
-            .map { if(query && it == '"') '"' else if(it in 'a'..'z' || it in 'A'..'Z') it.toLowerCase() else ' '}
+            .map { if (query && it == '"') '"' else if (it in 'a'..'z' || it in 'A'..'Z') it.toLowerCase() else ' ' }
             .joinToString("")
             .replace("\\s".toRegex(), " ")
     }
@@ -95,7 +95,7 @@ object HTMLParser {
         val strList = mutableListOf<String>()
         while (words.hasMoreTokens()) {
             val word = words.nextToken()
-            if(!isStopWord(word))
+            if (!isStopWord(word))
                 strList.add(stem(word))
         }
 
@@ -114,9 +114,9 @@ object HTMLParser {
         bean.url = url
         return bean.links
             .map { it.toExternalForm() }
-            .filter { if(filter != null) it.contains(filter, ignoreCase=true) else true }
-            .map { if(it.contains("#")) it.split("#")[0] else it }
-            .filter { if(!self) it != url else true }
+            .filter { if (filter != null) it.contains(filter, ignoreCase = true) else true }
+            .map { if (it.contains("#")) it.split("#")[0] else it }
+            .filter { if (!self) it != url else true }
             .toSet()
             .map { URL(it) }
     }
@@ -125,14 +125,15 @@ object HTMLParser {
         return try {
             val connection = URL(link).openConnection()
             val contentLength = connection.contentLength
-            val newContentLength = if(contentLength == -1)
+            val newContentLength = if (contentLength == -1)
                 connection.getInputStream().readBytes().size
             else -1
-            if(contentLength != -1) contentLength else newContentLength
+            if (contentLength != -1) contentLength else newContentLength
         } catch (e: Exception) {
             0
         }
     }
+
     fun getAllInfo(link: String): Triple<String, String, String> {
         val parser = Parser()
         parser.url = link
@@ -194,10 +195,12 @@ object HTMLParser {
         val default = "1990-01-01 00:00:00"
         try {
             parser.url = link
-        } catch (e: Exception) { return Timestamp.valueOf(default).time }
+        } catch (e: Exception) {
+            return Timestamp.valueOf(default).time
+        }
         val connection = parser.connection
         var lastModifiedHeader = connection.lastModified
-        val dateExtraction = if(lastModifiedHeader == 0.toLong()) {
+        val dateExtraction = if (lastModifiedHeader == 0.toLong()) {
             try {
                 parser.extractAllNodesThatMatch(
                     AndFilter(
@@ -212,6 +215,6 @@ object HTMLParser {
                 default
             }
         } else default
-        return if(lastModifiedHeader != 0.toLong()) lastModifiedHeader else Timestamp.valueOf(dateExtraction).time
+        return if (lastModifiedHeader != 0.toLong()) lastModifiedHeader else Timestamp.valueOf(dateExtraction).time
     }
 }
