@@ -1,5 +1,6 @@
 package util
 
+import org.apache.commons.lang3.StringUtils
 import org.htmlparser.Parser
 import org.htmlparser.beans.LinkBean
 import org.htmlparser.beans.StringBean
@@ -25,8 +26,9 @@ object HTMLParser {
                 if(data.toChar() == '\n') {
                     stopWords.add(words.toString())
                     words.clear()
+                } else {
+                    words.append(data.toChar())
                 }
-                words.append(data.toChar())
                 data = resourceStream.read()
             }
             resourceStream.close()
@@ -35,7 +37,7 @@ object HTMLParser {
         }
     }
 
-    private fun isStopWord(str: String): Boolean {
+    fun isStopWord(str: String): Boolean {
         return stopWords.contains(str)
     }
 
@@ -45,20 +47,53 @@ object HTMLParser {
 
     private fun processText(str: String, query: Boolean): String {
         return str
-            .map { if(it in 'a'..'z' || it in 'A'..'Z') it.toLowerCase() else ' '}
+            .map { if(query && it == '"') '"' else if(it in 'a'..'z' || it in 'A'..'Z') it.toLowerCase() else ' '}
             .joinToString("")
             .replace("\\s".toRegex(), " ")
     }
 
-    fun tokenize(str: String, query: Boolean=false): List<String> {
-        val processedText = processText(str, query)
+    fun tokenizeQuery(str: String): List<List<String>> {
+        val processedText = processText(str, true)
+        val words = StringTokenizer(processedText)
+        val result = mutableListOf<List<String>>()
+        while (words.hasMoreTokens()) {
+            val strList = mutableListOf<String>()
+
+            var word = words.nextToken()
+            println(word)
+            if(StringUtils.countMatches(word, '"') > 1) {
+                strList.add(word.replace("\"", ""))
+            } else if(word.contains('"')) {
+                var checkEven = false
+                strList.add(word.replace("\"", ""))
+                while(words.hasMoreTokens()) {
+                    word = words.nextToken()
+                    if(word.contains('"')) {
+                        strList.add(word.replace("\"", ""))
+                        checkEven = true
+                        break
+                    }
+                }
+                if(!checkEven && strList.size > 1) {
+                    strList.forEach {
+                        result.add(listOf(it))
+                    }
+                }
+            }
+            else
+                if(!isStopWord(word))
+                    strList.add(stem(word))
+            result.add(strList)
+        }
+        return result
+    }
+
+    fun tokenize(str: String): List<String> {
+        val processedText = processText(str, false)
         val words = StringTokenizer(processedText)
         val strList = mutableListOf<String>()
         while (words.hasMoreTokens()) {
             val word = words.nextToken()
-//            if(query && word.contains('"'))
-//                strList.add(word)
-//            else
             if(!isStopWord(word))
                 strList.add(stem(word))
         }
@@ -96,6 +131,50 @@ object HTMLParser {
         } catch (e: Exception) {
             0
         }
+    }
+    fun getAllInfo(link: String): Triple<String, String, String> {
+        val parser = Parser()
+        parser.url = link
+
+        val connection = URL(link).openConnection()
+        val contentLength = connection.contentLength
+
+        val size = try {
+            val newContentLength = if (contentLength == -1)
+                connection.getInputStream().readBytes().size
+            else -1
+            if (contentLength != -1) contentLength else newContentLength
+        } catch (e: Exception) {
+            0
+        }
+
+        val title = try {
+            val nodeList = parser.extractAllNodesThatMatch(TagNameFilter("title"))
+            nodeList?.elementAt(0)?.lastChild?.toPlainTextString() ?: ""
+        } catch (e: Exception) {
+            "Unauthorized"
+        }
+
+        val default = "1990-01-01 00:00:00"
+        var lastModifiedHeader = connection.lastModified
+        val dateExtraction = if (lastModifiedHeader == 0.toLong()) {
+            try {
+                parser.extractAllNodesThatMatch(
+                    AndFilter(
+                        TagNameFilter("p"),
+                        HasAttributeFilter("class", "copyright")
+                    )
+                )
+                    ?.elementAt(0)?.toPlainTextString()?.replace("\\s".toRegex(), "")!!
+                    .split("on")[1] + " 00:00:00"
+            } catch (e: Exception) {
+                lastModifiedHeader = connection.date
+                default
+            }
+        } else default
+        val date = if (lastModifiedHeader != 0.toLong()) lastModifiedHeader else Timestamp.valueOf(dateExtraction).time
+
+        return Triple(title, date.toString(), size.toString())
     }
 
     fun getTitle(link: String): String {

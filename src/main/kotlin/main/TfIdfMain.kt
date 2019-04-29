@@ -15,6 +15,7 @@ class TfIdfMain {
 
             urlLengthDB.removeAll()
             tfIdfDB.removeAll()
+            println("Calculating tfIdf for all docs and terms")
             val urls = urlWordCountDB.getAllKeys()
             val urlSize = urls.size
             urls.forEach {urlId ->

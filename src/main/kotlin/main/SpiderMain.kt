@@ -100,24 +100,25 @@ class SpiderMain {
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
             var counter = 0
-            urlSet.toSortedSet(compareBy { it.toExternalForm() }).forEach {
-                urlDB[it.toExternalForm()] = counter++
-            }
-
-            val cseLinks = urlDB.getAllKeys().filter { it.contains(rootLink) }
-            val nonCseLinks = mutableSetOf<String>()
-            println("Started getting child urls")
-            cseLinks.parallelStream().forEach { url ->
-                val childLinks = HTMLParser.extractLink(url, filter = null, self = false)
-                nonCseLinks.addAll(childLinks.map { it.toExternalForm() }.filter { !it.contains(rootLink) })
-            }
-            println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
-
-            println("Started indexing and writing child urls")
-            nonCseLinks.toSortedSet().forEach {
+            urlSet.toSortedSet(compareBy { it.toExternalForm() }).map{it.toExternalForm()}.forEach {
                 urlDB[it] = counter++
             }
 
+            println("Started getting child urls")
+//            val cseLinks = urlDB.getAllKeys().filter { it.contains(rootLink) }
+//            val nonCseLinks = mutableSetOf<String>()
+//            cseLinks.parallelStream().forEach { url ->
+//                val childLinks = HTMLParser.extractLink(url, filter = null, self = false)
+//                nonCseLinks.addAll(childLinks.map { it.toExternalForm() }.filter { !it.contains(rootLink) })
+//            }
+//            println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
+//
+//            println("Started indexing and writing child urls")
+//            nonCseLinks.toSortedSet().forEach {
+//                urlDB[it] = counter++
+//            }
+
+            val cseLinks = urlSet.map{it.toExternalForm()}.toList()
             cseLinks.parallelStream().forEach {
                 val childLinks = HTMLParser.extractLink(it, filter = rootLink, self = false)
                 val childLinkIdList = mutableListOf<Int>()
@@ -145,6 +146,7 @@ class SpiderMain {
                 val date = HTMLParser.getDate(link).toString()
                 val size = HTMLParser.getSize(link).toString()
                 urlInfoDB[urlDB[link]!!] = Triple(title, date, size)
+//                urlInfoDB[urlDB[link]!!] = HTMLParser.getAllInfo(link)
             }
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
@@ -189,6 +191,8 @@ class SpiderMain {
             closeAllDB(*databases)
 
             TfIdfMain.main(args)
+            println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
+
             Application.main(args)
         }
 
