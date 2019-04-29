@@ -46,13 +46,13 @@ class WebController {
             return "redirect:"
 
         val startTime = System.currentTimeMillis()
-        val queryList = HTMLParser.tokenize(query)
+        val queryList = HTMLParser.tokenizeQuery(query)
 
         val rankedItems = Ranker.rankDocs(queryList, spiderDB, wordDB).toMutableMap()
         val meanScore = rankedItems.values.sum() / rankedItems.size
         val maxPR = pageRank.getAllValues().map{it.toDouble()}.max() ?: 1.0
         rankedItems.forEach { urlId, score ->
-            queryList.forEach {
+            queryList.flatten().forEach {
                 if (CSVParser.parseFrom(urlInfo[urlId]!!)[0].contains(it, true))
                     rankedItems[urlId] = score + meanScore
             }

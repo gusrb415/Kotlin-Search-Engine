@@ -60,32 +60,33 @@ object HTMLParser {
             val strList = mutableListOf<String>()
 
             var word = words.nextToken()
-            println(word)
-            if(StringUtils.countMatches(word, '"') > 1) {
+            if (StringUtils.countMatches(word, '"') > 1) {
                 strList.add(word.replace("\"", ""))
-            } else if(word.contains('"')) {
+            } else if (word.contains('"')) {
                 var checkEven = false
                 strList.add(word.replace("\"", ""))
-                while(words.hasMoreTokens()) {
+                while (words.hasMoreTokens()) {
                     word = words.nextToken()
-                    if(word.contains('"')) {
+                    if (word.contains('"')) {
                         strList.add(word.replace("\"", ""))
                         checkEven = true
                         break
                     }
+                    strList.add(word)
                 }
-                if(!checkEven && strList.size > 1) {
+
+                if (!checkEven && strList.size > 1) {
                     strList.forEach {
-                        result.add(listOf(it))
+                        if (!isStopWord(it))
+                            result.add(listOf(stem(it)))
                     }
+                    strList.clear()
                 }
-            }
-            else
-                if(!isStopWord(word))
-                    strList.add(stem(word))
+            } else
+                strList.add(word)
             result.add(strList)
         }
-        return result
+        return result.map { list -> list.filter { !isStopWord(it) }.map { stem(it) } }.filter { it.isNotEmpty() }
     }
 
     fun tokenize(str: String): List<String> {
