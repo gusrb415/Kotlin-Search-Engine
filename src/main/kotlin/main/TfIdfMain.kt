@@ -2,7 +2,6 @@ package main
 
 import util.CSVParser
 import util.RocksDB
-import java.lang.Exception
 
 class TfIdfMain {
     companion object {
@@ -15,12 +14,15 @@ class TfIdfMain {
 
             urlLengthDB.removeAll()
             tfIdfDB.removeAll()
+
             println("Calculating tfIdf for all docs and terms")
             val urls = urlWordCountDB.getAllKeys()
             val urlSize = urls.size
-            urls.forEach {urlId ->
+            val logTwo = Math.log(2.0)
+            val urlToLengthMap = mutableMapOf<String, Double>()
+            urls.parallelStream().forEach {urlId ->
                 val wordCount = CSVParser.parseFrom(urlWordCountDB[urlId]!!)
-                val tfIdfList = mutableListOf<String>()
+                val tfIdfList = mutableListOf<Pair<String, Double>>()
                 if(wordCount.size < 2) return@forEach
                 for(i in 0 until wordCount.size step 2) {
                     val word = wordCount[i]
@@ -28,14 +30,16 @@ class TfIdfMain {
 
                     val docToCount = mutableMapOf<String, Int>()
                     val spiderList = CSVParser.parseFrom(spiderDB[word]!!)
-                    for (j in 1 until spiderList.size)
-                        docToCount[spiderList[j]] = (docToCount[spiderList[j]] ?: 0) + 1
-                    val tfIdf = count.toDouble() * Math.log(urlSize.toDouble() / docToCount.size) / Math.log(2.0)
-                    tfIdfList.add(word)
-                    tfIdfList.add("%.6f".format(tfIdf))
+                    for (docId in spiderList)
+                        docToCount[docId] = (docToCount[docId] ?: 0) + 1
+                    val tfIdf = count.toDouble() * Math.log(urlSize.toDouble() / docToCount.size) / logTwo
+                    tfIdfList.add(Pair(word, tfIdf))
                 }
-                urlLengthDB[urlId] = Math.sqrt(tfIdfList.map { it.toDouble() * it.toDouble() }.sum())
-                tfIdfDB[urlId] = tfIdfList
+                urlToLengthMap[urlId] = tfIdfList.map { it.second * it.second }.sum()
+                tfIdfDB[urlId] = tfIdfList.flatMap { listOf(it.first, "%.6f".format(it.second)) }
+            }
+            urlToLengthMap.forEach { urlId, length ->
+                urlLengthDB[urlId] = Math.sqrt(length)
             }
 
             urlLengthDB.close()

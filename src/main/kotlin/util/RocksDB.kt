@@ -57,7 +57,7 @@ class RocksDB(path: String) {
         var counter = 0
         val sb = StringBuilder()
         while (iter.isValid) {
-            sb.append(String(iter.key())).append(' ').append(String(iter.value()))
+            sb.append(String(iter.key())).append(": ").append(String(iter.value()))
             if (++counter % 10 == 0) {
                 println(sb.toString())
                 sb.clear()

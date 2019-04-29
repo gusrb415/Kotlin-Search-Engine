@@ -178,7 +178,7 @@ class SpiderMain {
                     countList.add(Pair(t, u.toString()))
                 }
                 urlWordCountDB[id] = countList.sortedByDescending { it.second }.flatMap { it.toList() }
-                if (++counter % 50 == 0) {
+                if (++counter % 100 == 0) {
                     System.gc()
                     println("Currently wrote $counter websites to DB")
                     println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
