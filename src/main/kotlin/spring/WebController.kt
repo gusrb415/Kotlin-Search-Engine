@@ -46,7 +46,6 @@ class WebController {
             return "redirect:"
 
         val startTime = System.currentTimeMillis()
-        val rawQuery = StringTokenizer(query.replace("\"", ""))
         val queryList = HTMLParser.tokenizeQuery(query)
         val rankedItems = Ranker.rankDocs(queryList)
         print("Ranking took ${(System.currentTimeMillis() - startTime) / 1000.0} seconds, ")
@@ -58,9 +57,10 @@ class WebController {
             val termCount = CSVParser.parseFrom(urlWordCountDB[urlId]!!)[1]
             val normCosScore = score / termCount.toDouble()
             var titleScore = 0.0
-            val title = CSVParser.parseFrom(urlInfo[urlId]!!)[0]
-            while(rawQuery.hasMoreTokens()) {
-                if (title.contains(rawQuery.nextToken(), true))
+            val originalTitle = CSVParser.parseFrom(urlInfo[urlId]!!)[0]
+            val titleTerms = HTMLParser.tokenize(originalTitle)
+            queryList.flatten().forEach {
+                if (titleTerms.contains(it) || originalTitle.contains(it, true))
                     titleScore += meanScore
             }
             val pageRankScore = (pageRank[urlId]?.toDouble() ?: 0.0) / maxPR
