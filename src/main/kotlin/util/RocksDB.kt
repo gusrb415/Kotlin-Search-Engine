@@ -25,8 +25,11 @@ class RocksDB(path: String) {
     }
 
     fun close() {
-        rocksDB.close()
-        options.close()
+        try {
+            rocksDB.close()
+            options.close()
+        } catch (ignored: Exception) {
+        }
     }
 
     fun remove(word: String) {

@@ -50,13 +50,13 @@ class WebController {
         val queryList = HTMLParser.tokenize(query, true)
         val rankedItems = Ranker.rankDocs(queryList, spiderDB, wordDB).toMutableMap()
         val meanScore = rankedItems.values.sum() / rankedItems.size
-        val maxPR = pageRank.getAllValues().map{it.toDouble()}.max()!!
+        val maxPR = pageRank.getAllValues().map{it.toDouble()}.max() ?: 1.0
         rankedItems.forEach { urlId, score ->
             queryList.forEach {
                 if (CSVParser.parseFrom(urlInfo[urlId]!!)[0].contains(it, true))
                     rankedItems[urlId] = score + meanScore
             }
-            val pageRankScore = pageRank[urlId]!!.toDouble() / maxPR * meanScore * 4
+            val pageRankScore = pageRank[urlId]?.toDouble() ?: 0.0 / maxPR * meanScore * 4
             rankedItems[urlId] = rankedItems[urlId]!! + pageRankScore
         }
 
@@ -74,7 +74,7 @@ class WebController {
                 <thead>
                     <tr>
                         <th scope="col">#</th>
-                        <th scope="col">Score</th>
+                        <th scope="col">Score<br>(Cos+PR+Title)</th>
                         <th scope="col">Information</th>
                         <th scope="col">Top-5 Frequency</th>
                         <th scope="col">Parent Link</th>

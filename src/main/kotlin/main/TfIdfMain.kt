@@ -23,9 +23,9 @@ class TfIdfMain {
                     val count = wordCount[i + 1]
 
                     val docToCount = mutableMapOf<String, Int>()
-                    val spiderList = spiderDB[word]!!.split("d").drop(0).map { tup -> tup.split(" ") }
+                    val spiderList = CSVParser.parseFrom(spiderDB[word]!!)
                     for (j in 1 until spiderList.size)
-                        docToCount[spiderList[j][0]] = (docToCount[spiderList[j][0]] ?: 0) + 1
+                        docToCount[spiderList[j]] = (docToCount[spiderList[j]] ?: 0) + 1
                     val tfIdf = count.toDouble() * Math.log(urlSize.toDouble() / docToCount.size) / Math.log(2.0)
                     tfIdfList.add(word)
                     tfIdfList.add("%.6f".format(tfIdf))

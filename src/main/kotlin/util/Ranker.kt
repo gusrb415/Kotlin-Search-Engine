@@ -25,21 +25,21 @@ object Ranker {
         val docLength = mutableMapOf<String, Double>()
         queryTermIds.forEach {
             val docToCount = mutableMapOf<String, Int>()
-            val spiderList = spiderDB[it]!!.split("d").drop(0).map { tup -> tup.split(" ") }
-            for (i in 1 until spiderList.size) {
-                docToCount[spiderList[i][0]] = (docToCount[spiderList[i][0]] ?: 0) + 1
+            val spiderList = CSVParser.parseFrom(spiderDB[it]!!)
+            spiderList.forEach {docId ->
+                docToCount[docId] = (docToCount[docId] ?: 0) + 1
             }
             val docs = docToCount.keys
 
-            docs.forEach { docId ->
+            docs.parallelStream().forEach { docId ->
                 val tfIdf = CSVParser.parseFrom(tfIdfDB[docId] ?: "")
                 var score = 0.0
-                val check = docLength[docId] == null
-                for(i in 0 until tfIdf.size step 2) {
-                    if(tfIdf[i] == it) {
+                val checkNotCalculated = docLength[docId] == null
+                for (i in 0 until tfIdf.size step 2) {
+                    if (tfIdf[i] == it) {
                         score = tfIdf[i + 1].toDouble()
                     }
-                    if(check) {
+                    if (checkNotCalculated) {
                         docLength[docId] = (docLength[docId] ?: 0.0) + Math.pow(tfIdf[i + 1].toDouble(), 2.0)
                     }
                 }
@@ -57,9 +57,9 @@ object Ranker {
     private fun findWordId(inputWords: List<String>, wordDB: RocksDB): List<String> {
         val result = mutableListOf<String>()
         for (inputWord in inputWords) {
-            if(inputWord.contains('"')) {
+            if (inputWord.contains('"')) {
                 val word = wordDB[inputWord.replace("\"", "")]
-                if(inputWord[0] == '"') {
+                if (inputWord[0] == '"') {
                     result.add("\"$word")
                 } else {
                     result.add("$word\"")
