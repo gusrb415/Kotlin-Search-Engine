@@ -21,13 +21,15 @@ object Ranker {
     private val tfIdfDB = RocksDB(SpiderMain.TF_IDF_DB_NAME)
     private val urlLengthDB = RocksDB(SpiderMain.URL_LENGTH_DB_NAME)
     private val urlWordsDB = RocksDB(SpiderMain.URL_WORDS_DB_NAME)
+    private val spiderDB = RocksDB(SpiderMain.SPIDER_DB_NAME)
+    private val wordDB = RocksDB(SpiderMain.WORD_DB_NAME)
+    private val urls = urlLengthDB.getAllKeys()
 
-    fun rankDocs(queryTerms: List<List<String>>, spiderDB: RocksDB, wordDB: RocksDB): Map<String, Double> {
+    fun rankDocs(queryTerms: List<List<String>>): MutableMap<String, Double> {
         val queryTermIds = findWordId(queryTerms, wordDB)
         val resultMap = mutableMapOf<String, Double>()
         queryTermIds.forEach { queryTermId ->
             if (queryTermId.size > 1) {  //Phrase detected
-                val urls = urlLengthDB.getAllKeys()
                 urls.forEach { urlId ->
                     //Phrase is in document
                     val sb = StringBuilder()

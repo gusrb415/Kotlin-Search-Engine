@@ -143,6 +143,10 @@ class RocksDB(path: String) {
         put(url, docID.toString())
     }
 
+    operator fun set(docID: String, url: String) {
+        put(docID, url)
+    }
+
     operator fun set(docId: String, rank: Double) {
         put(docId, rank.toString())
     }

@@ -5,9 +5,6 @@ import org.htmlparser.Parser
 import org.htmlparser.beans.LinkBean
 import org.htmlparser.beans.StringBean
 import org.htmlparser.filters.*
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileReader
 import java.io.IOException
 import java.net.URL
 import java.sql.Timestamp
@@ -113,7 +110,14 @@ object HTMLParser {
         val bean = LinkBean()
         bean.url = url
         return bean.links
-            .map { it.toExternalForm() }
+            .map { it.toExternalForm().split("?")[0] }
+            .map {
+                if (it.contains('~')) {
+                    val startIndex = it.indexOf('~')
+                    val nextIndex = it.indexOf('/', startIndex)
+                    it.substring(0, nextIndex + 1)
+                } else it
+            }
             .filter { if (filter != null) it.contains(filter, ignoreCase = true) else true }
             .map { if (it.contains("#")) it.split("#")[0] else it }
             .filter { if (!self) it != url else true }

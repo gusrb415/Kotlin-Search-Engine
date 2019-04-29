@@ -26,7 +26,9 @@ class SpiderMain {
         const val URL_PARENT_DB_NAME = "$BASE_URL/rockUrlParent"
         const val URL_WORD_COUNT_DB_NAME = "$BASE_URL/rockUrlWordCount"
         const val TF_IDF_DB_NAME = "$BASE_URL/rockTfIdf"
-        const val URL_LENGTH_DB_NAME = "$BASE_URL/urlLength"
+        const val URL_LENGTH_DB_NAME = "$BASE_URL/rockUrlLength"
+        const val REVERSE_URL_DB_NAME = "$BASE_URL/rockReverseUrl"
+        const val REVERSE_WORD_DB_NAME = "$BASE_URL/rockReverseWord"
 
         private fun closeAllDB(vararg databases: RocksDB) {
             println("Closing all databases")
@@ -82,10 +84,11 @@ class SpiderMain {
             val urlWordCountDB = RocksDB(URL_WORD_COUNT_DB_NAME)
             // urlID -> list(wordID, tfidf)
             // TFIDF DB NOT USED HERE
-//            val urlLengthDB = RocksDB(URL_LENGTH_DB_NAME)
-
+            //  val urlLengthDB = RocksDB(URL_LENGTH_DB_NAME)
+            val reverseUrlDB = RocksDB(REVERSE_URL_DB_NAME)
+            val reverseWordDB = RocksDB(REVERSE_WORD_DB_NAME)
             val databases = arrayOf(
-                urlDB, urlInfoDB, urlChildDB, urlParentDB,
+                urlDB, urlInfoDB, urlChildDB, urlParentDB, reverseUrlDB, reverseWordDB,
                 spiderDB, wordDB, urlWordsDB, pageRankDB, urlWordCountDB
             )
             clearAllDB(*databases)
@@ -94,30 +97,18 @@ class SpiderMain {
             // Filter ensures only child links to be returned
             println("Recursively crawling URLs from $rootLink")
             val urlSet = mutableSetOf<URL>()
-            val minSize = if (args.isNotEmpty()) args[0].toInt() else 500
+            val minSize = if (args.isNotEmpty()) args[0].toInt() else 300
             recursivelyCrawlLinks(URL(rootLink), filter = rootLink, urlSet = urlSet, minSize = minSize)
             println("Total ${urlSet.size} websites found")
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
-            var counter = 0
+            var counter = -1
             urlSet.toSortedSet(compareBy { it.toExternalForm() }).map { it.toExternalForm() }.forEach {
-                urlDB[it] = counter++
+                urlDB[it] = ++counter
+                reverseUrlDB[counter.toString()] = it
             }
 
             println("Started getting child urls")
-//            val cseLinks = urlDB.getAllKeys().filter { it.contains(rootLink) }
-//            val nonCseLinks = mutableSetOf<String>()
-//            cseLinks.parallelStream().forEach { url ->
-//                val childLinks = HTMLParser.extractLink(url, filter = null, self = false)
-//                nonCseLinks.addAll(childLinks.map { it.toExternalForm() }.filter { !it.contains(rootLink) })
-//            }
-//            println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
-//
-//            println("Started indexing and writing child urls")
-//            nonCseLinks.toSortedSet().forEach {
-//                urlDB[it] = counter++
-//            }
-
             val cseLinks = urlSet.map { it.toExternalForm() }.toList()
             cseLinks.parallelStream().forEach {
                 val childLinks = HTMLParser.extractLink(it, filter = rootLink, self = false)
@@ -152,7 +143,7 @@ class SpiderMain {
 
             println("Started Writing word ID and position to database")
             counter = 0
-            var wordCounter = 0
+            var wordCounter = -1
             val wordToDocIdMap = mutableMapOf<String, MutableList<String>>()
 
             cseLinks.forEach { link ->
@@ -161,8 +152,9 @@ class SpiderMain {
 
                 val wordsToIds = wordList.map {
                     wordDB[it] ?: {
-                        wordDB[it] = wordCounter
-                        wordCounter++.toString()
+                        wordDB[it] = ++wordCounter
+                        reverseWordDB[wordCounter.toString()] = it
+                        wordCounter.toString()
                     }.invoke()
                 }
                 urlWordsDB[id] = wordsToIds
@@ -173,11 +165,14 @@ class SpiderMain {
                         wordToDocIdMap[wordId] = mutableListOf(id)
                     }.invoke()
                 }
-                val countList = mutableListOf<Pair<String, String>>()
+                val countList = mutableListOf<Pair<String, Int>>()
                 wordCountMap.forEach { t, u ->
-                    countList.add(Pair(t, u.toString()))
+                    countList.add(Pair(t, u))
                 }
-                urlWordCountDB[id] = countList.sortedByDescending { it.second }.flatMap { it.toList() }
+                urlWordCountDB[id] = countList
+                    .sortedByDescending { it.second }
+                    .map { listOf(it.first, it.second.toString()) }
+                    .flatten()
                 if (++counter % 100 == 0) {
                     System.gc()
                     println("Currently wrote $counter websites to DB")

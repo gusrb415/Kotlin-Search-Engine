@@ -8,7 +8,9 @@ class Application {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            SpringApplication.run(Application::class.java, *args)
+            val app = SpringApplication(Application::class.java)
+            app.setDefaultProperties(mapOf("server.port" to "80"))
+            app.run(*args)
         }
     }
 }
