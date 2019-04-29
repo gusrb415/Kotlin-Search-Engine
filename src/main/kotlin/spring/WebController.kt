@@ -47,8 +47,9 @@ class WebController {
 
         val startTime = System.currentTimeMillis()
         val queryList = HTMLParser.tokenizeQuery(query)
-
         val rankedItems = Ranker.rankDocs(queryList, spiderDB, wordDB).toMutableMap()
+        print("1st took ${(System.currentTimeMillis() - startTime) / 1000.0}, ")
+
         val meanScore = rankedItems.values.sum() / rankedItems.size
         val maxPR = pageRank.getAllValues().map{it.toDouble()}.max() ?: 1.0
         rankedItems.forEach { urlId, score ->
@@ -65,10 +66,10 @@ class WebController {
             val termCount = CSVParser.parseFrom(urlWordCountDB[t]!!)[1]
             resultList.add(Pair(t, u / termCount.toDouble()))
         }
-        val sortedList = resultList.sortedByDescending { it.second }
+        var counter = 0
+        val sortedList = resultList.sortedByDescending { it.second }.map{ ++counter to it }
 
         val sb = StringBuilder()
-        var count = 0
         sb.append("""
             <table class="table table-striped">
                 <thead>
@@ -83,25 +84,31 @@ class WebController {
                 </thead>
                 <tbody>
         """.trimIndent())
-        var classCounter = 0
-        for (rankedItem in sortedList) {
-            val urlId = rankedItem.first
-            val score = "%.6f".format(rankedItem.second)
+        print("2nd took ${(System.currentTimeMillis() - startTime) / 1000.0}, ")
+
+        val resultMap = mutableMapOf<Int, String>()
+        sortedList.parallelStream().forEach { rankAndItem ->
+            var rank = rankAndItem.first
+            if(rank > 50) return@forEach
+            val urlId = rankAndItem.second.first
+            val score = "%.6f".format(rankAndItem.second.second)
             val childLinks = CSVParser.parseFrom(urlChildInfo[urlId]!!)
             val childUrlSb = StringBuilder()
             childLinks.forEach {
                 val url = urlDB.getKey(it)
-                childUrlSb.append("""
-                    <a href="$url" rel="nofollow" target="_blank">$url</a><br>
-                """.trimMargin())
+                if(url != null)
+                    childUrlSb.append("""
+                        <a href="$url" rel="nofollow" target="_blank">$url</a><br>
+                    """.trimMargin())
             }
             val parentLinks = CSVParser.parseFrom(urlParentInfo[urlId]!!)
             val parentUrlSb = StringBuilder()
             parentLinks.forEach {
                 val url = urlDB.getKey(it)
-                parentUrlSb.append("""
-                    <a href="$url" rel="nofollow" target="_blank">$url</a><br>
-                """.trimMargin())
+                if(url != null)
+                    parentUrlSb.append("""
+                        <a href="$url" rel="nofollow" target="_blank">$url</a><br>
+                    """.trimMargin())
             }
             val termCount = CSVParser.parseFrom(urlWordCountDB[urlId]!!)
             val termCountSb = StringBuilder()
@@ -112,9 +119,9 @@ class WebController {
             }
             val url = urlDB.getKey(urlId)
             val info = CSVParser.parseFrom(urlInfo[urlId]!!)
-            sb.append("""
+            resultMap[rank] = ("""
                 <tr>
-                    <th scope="row">${++count}</th>
+                    <th scope="row">${rank}</th>
                     <td>$score<br>
                     </td>
                     <td>
@@ -128,27 +135,28 @@ class WebController {
                     </td>
                     <td>
                     <button class="btn btn-info" type="button" data-toggle="collapse"
-                    onclick="change(this.id)" id="colButton$classCounter"
-                    data-target="#collapse$classCounter" aria-expanded="false" aria-controls="collapse$classCounter">
+                    onclick="change(this.id)" id="parColBut$rank"
+                    data-target="#parCol$rank" aria-expanded="false" aria-controls="parCol$rank">
                     Show Parent Urls (${parentLinks.size} urls)</button>
-                    <div class="collapse" id="collapse${classCounter++}">
+                    <div class="collapse" id="parCol$rank">
                     $parentUrlSb
                     </div>
                     </td>
                     <td>
                     <button class="btn btn-info" type="button" data-toggle="collapse"
-                    onclick="change(this.id)"id="colButton$classCounter"
-                    data-target="#collapse$classCounter" aria-expanded="false" aria-controls="collapse$classCounter">
+                    onclick="change(this.id)"id="chiColBut$rank"
+                    data-target="#chiCol$rank" aria-expanded="false" aria-controls="chiCol$rank">
                     Show Child Urls (${childLinks.size} urls)</button>
-                    <div class="collapse" id="collapse${classCounter++}">
+                    <div class="collapse" id="chiCol$rank">
                     $childUrlSb
                     </div>
                     </td>
                 </tr>
             """.trimIndent())
-            if(count == 50) break
         }
+        resultMap.toSortedMap().forEach { _, str -> sb.append(str) }
         sb.append("</tbody></table>")
+        println("3rd took ${(System.currentTimeMillis() - startTime) / 1000.0}")
 
         val timeDiff = (System.currentTimeMillis() - startTime) / 1000.0
         map.addAttribute("timeDiff", "${rankedItems.size} results found (%.2f seconds)".format(timeDiff))
