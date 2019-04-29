@@ -11,11 +11,14 @@ class TfIdfMain {
             val spiderDB = RocksDB(SpiderMain.SPIDER_DB_NAME)
             val urlWordCountDB = RocksDB(SpiderMain.URL_WORD_COUNT_DB_NAME)
             val tfIdfDB = RocksDB(SpiderMain.TF_IDF_DB_NAME)
+            val urlLengthDB = RocksDB(SpiderMain.URL_LENGTH_DB_NAME)
+
+            urlLengthDB.removeAll()
             tfIdfDB.removeAll()
             val urls = urlWordCountDB.getAllKeys()
             val urlSize = urls.size
-            urls.forEach {
-                val wordCount = CSVParser.parseFrom(urlWordCountDB[it]!!)
+            urls.forEach {urlId ->
+                val wordCount = CSVParser.parseFrom(urlWordCountDB[urlId]!!)
                 val tfIdfList = mutableListOf<String>()
                 if(wordCount.size < 2) return@forEach
                 for(i in 0 until wordCount.size step 2) {
@@ -30,9 +33,11 @@ class TfIdfMain {
                     tfIdfList.add(word)
                     tfIdfList.add("%.6f".format(tfIdf))
                 }
-                tfIdfDB[it] = tfIdfList
+                urlLengthDB[urlId] = Math.sqrt(tfIdfList.map { it.toDouble() * it.toDouble() }.sum())
+                tfIdfDB[urlId] = tfIdfList
             }
 
+            urlLengthDB.close()
             spiderDB.close()
             urlWordCountDB.close()
             tfIdfDB.close()
