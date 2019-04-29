@@ -28,16 +28,16 @@ object Ranker {
     }
 
     fun rankDocs(queryTerms: List<List<String>>, spiderDB: RocksDB, wordDB: RocksDB): Map<String, Double> {
-        System.out.println("Rank Docs")
         System.out.println(queryTerms)
         val queryTermIds = findWordId(queryTerms, wordDB)
+        System.out.println(queryTermIds.toString())
 
-        System.out.println(queryTermIds)
         val resultMap = mutableMapOf<String, Double>()
+
         queryTermIds.forEach {queryTermIds ->
 
             if (queryTermIds.size > 1){  //Phrase detected
-                System.out.println("Phrase")
+                System.out.println("Phrase Mode")
                 val urls = urlLengthDB.getAllKeys()
                 urls.forEach {urlId ->
                     var score = 0.0
@@ -91,7 +91,7 @@ object Ranker {
                 }
 
             } else {            //Single word
-                System.out.println("Word")
+                System.out.println("Word Mode")
                 queryTermIds.forEach {
                     val spiderList = CSVParser.parseFrom(spiderDB[it]!!)
                     spiderList.parallelStream().forEach { docId ->
@@ -132,10 +132,19 @@ object Ranker {
             for(inputWord in inputWords) {
                 val wordId = wordDB[inputWord]
                 if (wordId != null) phraseList.add(wordId)
+
+                print(inputWord)
+                print(":")
+                println(wordId)
+
             }
+
             result.add(phraseList)
         }
-        wordDB.printAll()
+
+        print("findWordId:")
+        println(result)
+
         return result
     }
 
