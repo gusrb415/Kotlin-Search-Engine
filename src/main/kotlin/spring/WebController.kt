@@ -56,7 +56,7 @@ class WebController {
                 if (CSVParser.parseFrom(urlInfo[urlId]!!)[0].contains(it, true))
                     rankedItems[urlId] = score + meanScore
             }
-            val pageRankScore = pageRank[urlId]?.toDouble() ?: 0.0 / maxPR * meanScore * 4
+            val pageRankScore = pageRank[urlId]?.toDouble() ?: 0.0 / maxPR * meanScore
             rankedItems[urlId] = rankedItems[urlId]!! + pageRankScore
         }
 
@@ -73,16 +73,17 @@ class WebController {
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Score<br>(Cos+PR+Title)</th>
-                        <th scope="col">Information</th>
-                        <th scope="col">Top-5 Frequency</th>
-                        <th scope="col">Parent Link</th>
-                        <th scope="col">Child Link</th>
+                        <th scope="col" style="width: 5%">#</th>
+                        <th scope="col" style="width: 10%">Score<br>(Cos+PR+Title)</th>
+                        <th scope="col" style="width: 25%">Information</th>
+                        <th scope="col" style="width: 10%">Top-5 Frequency</th>
+                        <th scope="col" style="width: 25%">Parent Link</th>
+                        <th scope="col" style="width: 25%">Child Link</th>
                     </tr>
                 </thead>
                 <tbody>
         """.trimIndent())
+        var classCounter = 0
         for (rankedItem in sortedList) {
             val urlId = rankedItem.first
             val score = "%.6f".format(rankedItem.second)
@@ -126,10 +127,22 @@ class WebController {
                     $termCountSb
                     </td>
                     <td>
+                    <button class="btn btn-primary" type="button" data-toggle="collapse"
+                    data-target="#collapse$classCounter" aria-expanded="false" aria-controls="collapse$classCounter">
+                    Show Parent Urls</button><br>
+                    Total: ${parentLinks.size} urls<br>
+                    <div class="collapse" id="collapse${classCounter++}">
                     $parentUrlSb
+                    </div>
                     </td>
                     <td>
+                    <button class="btn btn-primary" type="button" data-toggle="collapse"
+                    data-target="#collapse$classCounter" aria-expanded="false" aria-controls="collapse$classCounter">
+                    Show Child Urls</button><br>
+                    Total: ${childLinks.size} urls<br>
+                    <div class="collapse" id="collapse${classCounter++}">
                     $childUrlSb
+                    </div>
                     </td>
                 </tr>
             """.trimIndent())
@@ -139,7 +152,7 @@ class WebController {
 
         val timeDiff = (System.currentTimeMillis() - startTime) / 1000.0
         map.addAttribute("timeDiff", "${rankedItems.size} results found (%.2f seconds)".format(timeDiff))
-        map.addAttribute("result", if(rankedItems.isEmpty()) "" else sb.toString())
+        map.addAttribute("result", if(rankedItems.isEmpty()) "" else sb.toString().replace("\n", ""))
         return "result"
     }
 
