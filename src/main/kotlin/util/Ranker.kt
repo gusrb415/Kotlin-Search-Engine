@@ -22,8 +22,7 @@ object Ranker {
     private val urlLengthDB = RocksDB(SpiderMain.URL_LENGTH_DB_NAME)
     private val urlWordsDB = RocksDB(SpiderMain.URL_WORDS_DB_NAME)
 
-    private fun countPhrase(termIds: String, urlId: String) : Int {
-
+    private fun countPhrase(termIds: String, urlId: String): Int {
         return StringUtils.countMatches(urlWordsDB[urlId].toString(), termIds)
     }
 
@@ -34,37 +33,36 @@ object Ranker {
 
         val resultMap = mutableMapOf<String, Double>()
 
-        queryTermIds.forEach {queryTermIds ->
-
-            if (queryTermIds.size > 1){  //Phrase detected
+        queryTermIds.forEach { queryTermId ->
+            if (queryTermId.size > 1) {  //Phrase detected
                 System.out.println("Phrase Mode")
                 val urls = urlLengthDB.getAllKeys()
-                urls.forEach {urlId ->
+                urls.forEach { urlId ->
                     var score = 0.0
                     //Phrase is in document
 
                     val sb = StringBuilder()
-                    for(i in 0 until queryTermIds.size) {
-                        sb.append("\"${queryTermIds[i]}\"")
-                        if(i != queryTermIds.size - 1) {
+                    for (i in 0 until queryTermId.size) {
+                        sb.append("\"${queryTermId[i]}\"")
+                        if (i != queryTermId.size - 1) {
                             sb.append(",")
                         }
                     }
 
-                    if (urlWordsDB[urlId]!!.contains(sb.toString())){
+                    if (urlWordsDB[urlId]!!.contains(sb.toString())) {
 
                         //tfIdf: wordId, score, wordId, score...
                         val tfIdf = CSVParser.parseFrom(tfIdfDB[urlId] ?: "")
 
                         //Get tfidf score for each word in phrase
                         for (i in 0 until tfIdf.size step 2) {
-                            if (tfIdf[i] == queryTermIds[0]){ //Score of first wordId found
-                                score += tfIdf[i+1].toDouble()
+                            if (tfIdf[i] == queryTermId[0]) { //Score of first wordId found
+                                score += tfIdf[i + 1].toDouble()
 
                                 //Get the tfidf score of the remaining phrase
                                 var counter = 2
-                                for (j in i+1 until queryTermIds.size step 2) {
-                                    if (counter == queryTermIds.size)
+                                for (j in i + 1 until queryTermId.size step 2) {
+                                    if (counter == queryTermId.size)
                                         break
                                     score += tfIdf[j].toDouble()
                                     counter++
@@ -81,7 +79,7 @@ object Ranker {
 
             } else {            //Single word
                 System.out.println("Word Mode")
-                queryTermIds.forEach {
+                queryTermId.forEach {
                     val spiderList = CSVParser.parseFrom(spiderDB[it]!!)
                     spiderList.parallelStream().forEach { docId ->
                         val tfIdf = CSVParser.parseFrom(tfIdfDB[docId] ?: "")
@@ -93,7 +91,6 @@ object Ranker {
                             }
                         }
                         resultMap[docId] = (resultMap[docId] ?: 0.0) + score
-
                     }
                 }
             }
@@ -101,13 +98,8 @@ object Ranker {
 
         resultMap.forEach { key, value ->
             resultMap[key] = value / (urlLengthDB[key]!!.toDouble() * Math.sqrt(queryTermIds.size.toDouble()))
-            if (resultMap[key] != 0.0) {
-                print(key)
-                print(": ")
-                println(resultMap[key])
-            }
         }
-
+        println(resultMap)
 
         return resultMap
     }
@@ -118,23 +110,15 @@ object Ranker {
 
         for (inputWords in inputWordsList) {
             val phraseList = mutableListOf<String>()
-            for(inputWord in inputWords) {
+            for (inputWord in inputWords) {
                 val wordId = wordDB[inputWord]
                 if (wordId != null) phraseList.add(wordId)
-
-                print(inputWord)
-                print(":")
-                println(wordId)
-
             }
 
             result.add(phraseList)
         }
-
-        print("findWordId:")
-        println(result)
+        println("findWordId: $result")
 
         return result
     }
-
 }
