@@ -3,6 +3,7 @@ package util
 import org.apache.commons.lang3.StringUtils
 import main.SpiderMain
 import java.lang.StringBuilder
+import java.util.*
 
 /**
  *  Weight of query term can be determined by tf * idf
@@ -24,6 +25,23 @@ object Ranker {
     private val spiderDB = RocksDB(SpiderMain.SPIDER_DB_NAME)
     private val wordDB = RocksDB(SpiderMain.WORD_DB_NAME)
     private val urls = urlLengthDB.getAllKeys()
+    private val tfIdfMap = mutableMapOf<String, SortedMap<String, Double>>()
+
+    init {
+        val keys = tfIdfDB.getAllKeys()
+        keys.forEach {
+            val tfIdfList = CSVParser.parseFrom(tfIdfDB[it] ?: "")
+            val sortedMap = sortedMapOf<String, Double>()
+            for (i in 0 until tfIdfList.size step 2) {
+                sortedMap[tfIdfList[i]] = tfIdfList[i + 1].toDouble()
+            }
+            tfIdfMap[it] = sortedMap
+        }
+    }
+
+    fun initialize() {
+        println("Total ${urls.size} URLs found in Database")
+    }
 
     fun rankDocs(queryTerms: List<List<String>>): MutableMap<String, Double> {
         val queryTermIds = findWordId(queryTerms, wordDB)
@@ -44,21 +62,11 @@ object Ranker {
                     val wordsInDoc = urlWordsDB[urlId]!!
                     if (wordsInDoc.contains(queryStr)) {
                         //tfIdf: wordId, score, wordId, score...
-                        val tfIdf = CSVParser.parseFrom(tfIdfDB[urlId] ?: "")
                         var score = 0.0
-                        val size = queryTermId.size
-                        var found = 0
+
                         //Get tfidf score for each word in phrase
-                        for (i in 0 until tfIdf.size step 2) {
-                            for (query in queryTermId) {
-                                if (tfIdf[i] == query) {
-                                    score += tfIdf[i + 1].toDouble()
-                                    ++found
-                                    break
-                                }
-                            }
-                            if (found == size)
-                                break
+                        for (term in queryTermId) {
+                            score += tfIdfMap[urlId]!![term]!!
                         }
 
                         //Multiply score by number of times the phrase appear in doc
@@ -67,20 +75,13 @@ object Ranker {
                     }
                 }
             } else {            //Single word
-                queryTermId.forEach {
-                    val spiderList = CSVParser.parseFrom(spiderDB[it]!!)
-                    spiderList.parallelStream().forEach { docId ->
-                        val tfIdf = CSVParser.parseFrom(tfIdfDB[docId] ?: "")
-                        var score = 0.0
-                        for (i in 0 until tfIdf.size step 2) {
-                            if (tfIdf[i] == it) {
-                                score = tfIdf[i + 1].toDouble()
-                                break
-                            }
-                        }
-                        resultMap[docId] = (resultMap[docId] ?: 0.0) + score
-                    }
+                val startTime = System.currentTimeMillis()
+                val spiderList = CSVParser.parseFrom(spiderDB[queryTermId[0]]!!)
+                println("Term ${queryTermId[0]} parsing took with ${spiderList.size} urls found ${(System.currentTimeMillis() - startTime) / 1000.0} seconds")
+                spiderList.parallelStream().forEach { docId ->
+                    resultMap[docId] = (resultMap[docId] ?: 0.0) + tfIdfMap[docId]!![queryTermId[0]]!!
                 }
+                println("Term ${queryTermId[0]} took ${(System.currentTimeMillis() - startTime) / 1000.0} seconds")
             }
         }
 

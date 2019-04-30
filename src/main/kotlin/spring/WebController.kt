@@ -17,14 +17,16 @@ import java.util.*
 
 @Controller
 class WebController {
-    private val urlInfo = RocksDB(SpiderMain.URL_INFO_DB_NAME)
-    private val urlChildInfo = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
-    private val urlParentInfo = RocksDB(SpiderMain.URL_PARENT_DB_NAME)
-    private val pageRank = RocksDB(SpiderMain.PAGE_RANK_DB_NAME)
-    private val urlWordCountDB = RocksDB(SpiderMain.URL_WORD_COUNT_DB_NAME)
-    private val reverseUrlDB = RocksDB(SpiderMain.REVERSE_URL_DB_NAME)
-    private val reverseWordDB = RocksDB(SpiderMain.REVERSE_WORD_DB_NAME)
-    private val maxPR = (pageRank.getAllValues().map { it.toDouble() }.max() ?: 1.0) * 3
+    companion object {
+        private val urlInfo = RocksDB(SpiderMain.URL_INFO_DB_NAME)
+        private val urlChildInfo = RocksDB(SpiderMain.URL_CHILD_DB_NAME)
+        private val urlParentInfo = RocksDB(SpiderMain.URL_PARENT_DB_NAME)
+        private val pageRank = RocksDB(SpiderMain.PAGE_RANK_DB_NAME)
+        private val urlWordCountDB = RocksDB(SpiderMain.URL_WORD_COUNT_DB_NAME)
+        private val reverseUrlDB = RocksDB(SpiderMain.REVERSE_URL_DB_NAME)
+        private val reverseWordDB = RocksDB(SpiderMain.REVERSE_WORD_DB_NAME)
+        private val maxPR = (pageRank.getAllValues().map { it.toDouble() }.max() ?: 1.0) * 3
+    }
 
     @RequestMapping("/")
     fun index(map: ModelMap): String {
