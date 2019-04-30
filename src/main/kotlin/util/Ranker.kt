@@ -2,8 +2,10 @@ package util
 
 import org.apache.commons.lang3.StringUtils
 import main.SpiderMain
+import java.lang.Exception
 import java.lang.StringBuilder
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  *  Weight of query term can be determined by tf * idf
@@ -25,7 +27,7 @@ object Ranker {
     private val spiderDB = RocksDB(SpiderMain.SPIDER_DB_NAME)
     private val wordDB = RocksDB(SpiderMain.WORD_DB_NAME)
     private val urls = urlLengthDB.getAllKeys()
-    private val tfIdfMap = mutableMapOf<String, SortedMap<String, Double>>()
+    private val tfIdfMap = sortedMapOf<String, SortedMap<String, Double>>()
 
     init {
         val keys = tfIdfDB.getAllKeys()
@@ -45,7 +47,7 @@ object Ranker {
 
     fun rankDocs(queryTerms: List<List<String>>): MutableMap<String, Double> {
         val queryTermIds = findWordId(queryTerms, wordDB)
-        val resultMap = mutableMapOf<String, Double>()
+        val resultMap = ConcurrentHashMap<String, Double>()
         queryTermIds.forEach { queryTermId ->
             if (queryTermId.size > 1) {  //Phrase detected
                 urls.forEach { urlId ->
@@ -75,13 +77,15 @@ object Ranker {
                     }
                 }
             } else {            //Single word
-                val startTime = System.currentTimeMillis()
-                val spiderList = CSVParser.parseFrom(spiderDB[queryTermId[0]]!!)
-                println("Term ${queryTermId[0]} parsing took with ${spiderList.size} urls found ${(System.currentTimeMillis() - startTime) / 1000.0} seconds")
+                val spiderList = try {
+                    CSVParser.parseFrom(spiderDB[queryTermId[0]]!!)
+                } catch (e: Exception) {
+                    listOf<String>()
+                }
+
                 spiderList.parallelStream().forEach { docId ->
                     resultMap[docId] = (resultMap[docId] ?: 0.0) + tfIdfMap[docId]!![queryTermId[0]]!!
                 }
-                println("Term ${queryTermId[0]} took ${(System.currentTimeMillis() - startTime) / 1000.0} seconds")
             }
         }
 
@@ -102,7 +106,8 @@ object Ranker {
                 val wordId = wordDB[inputWord]
                 if (wordId != null) phraseList.add(wordId)
             }
-            result.add(phraseList)
+            if(phraseList.isNotEmpty())
+                result.add(phraseList)
         }
 
         return result

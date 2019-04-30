@@ -97,7 +97,7 @@ class SpiderMain {
             // Filter ensures only child links to be returned
             println("Recursively crawling URLs from $rootLink")
             val urlSet = mutableSetOf<URL>()
-            val minSize = if (args.isNotEmpty()) args[0].toInt() else 300
+            val minSize = if (args.isNotEmpty()) args[0].toInt() else 100000
             recursivelyCrawlLinks(URL(rootLink), filter = rootLink, urlSet = urlSet, minSize = minSize)
             println("Total ${urlSet.size} websites found")
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
