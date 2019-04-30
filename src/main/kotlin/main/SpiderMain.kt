@@ -137,7 +137,6 @@ class SpiderMain {
                 val date = HTMLParser.getDate(link).toString()
                 val size = HTMLParser.getSize(link).toString()
                 urlInfoDB[urlDB[link]!!] = Triple(title, date, size)
-//                urlInfoDB[urlDB[link]!!] = HTMLParser.getAllInfo(link)
             }
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
 
@@ -187,8 +186,6 @@ class SpiderMain {
 
             TfIdfMain.main(args)
             println("Time Elapsed: ${(System.currentTimeMillis() - startTime).toDouble() / 1000} seconds")
-
-            Application.main(args)
         }
 
         private fun writeUrlParentDB(keys: List<String>, Linkmatrix: List<List<Double>>, urlParentDB: RocksDB) {

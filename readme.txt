@@ -10,12 +10,16 @@ Run Spider
 Compile and Run SpiderMain.kt in the project (Requires Kotlin Compiler downloadable using Gradle)
 Folder RocksDB is created with several databases.
 
-Phase 1 Test Program
-To retrieve the result, open and run DatabaseTest.kt in the project.
-The program will read data from the RocksDB and outputs a plain-text file named spider_result.txt.
+Run Tomcat Server
+Compile and Run Application.kt in the project (Requires Kotlin Compiler downloadable using Gradle)
+Folder RocksDB is created with several databases.
 
-Database Schema
-Please refer to Database_Schema.docx
+Alternative Method
+Download pre-built jar from http://bit.ly/2WcaRsp
+run java -jar path/to/jar <args>
+If you want to run from crawler to server, pass ¡°spider <max number of websites to fetch> server¡± as
+arguments
+If you want to run only the server, pass ¡°server¡± as arguments
 
 Programming Language Used
 Kotlin - a cross-platform, statically typed, general-purpose programming language with type inference.
