@@ -36,7 +36,7 @@ apply plugin: 'kotlin-jpa'
 apply plugin: 'io.spring.dependency-management'
 
 task SearchEngineJar(type: ShadowJar) {
-    manifest.attributes 'Main-Class': 'main.SpiderMain'
+    manifest.attributes 'Main-Class': 'main.Main'
     baseName = 'SearchEngine'
     destinationDir = file('./jars')
 

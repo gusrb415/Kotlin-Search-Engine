@@ -13,6 +13,7 @@ import util.CSVParser
 import util.HTMLParser
 import util.RocksDB
 import java.text.SimpleDateFormat
+import java.time.ZoneId
 import java.util.*
 
 @Controller
@@ -26,6 +27,10 @@ class WebController {
         private val reverseUrlDB = RocksDB(SpiderMain.REVERSE_URL_DB_NAME)
         private val reverseWordDB = RocksDB(SpiderMain.REVERSE_WORD_DB_NAME)
         private val maxPR = (pageRank.getAllValues().map { it.toDouble() }.max() ?: 1.0) * 3
+        val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        init {
+            dateFormatter.timeZone = TimeZone.getTimeZone(ZoneId.of("Hongkong"))
+        }
     }
 
     @RequestMapping("/")
@@ -183,8 +188,7 @@ class WebController {
         return "result"
     }
 
-
     private fun buildDateFromLong(longNumber: Long): String {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date(longNumber))
+        return dateFormatter.format(Date(longNumber))
     }
 }

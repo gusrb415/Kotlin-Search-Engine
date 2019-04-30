@@ -48,7 +48,7 @@ object Ranker {
     fun rankDocs(queryTerms: List<List<String>>): MutableMap<String, Double> {
         val queryTermIds = findWordId(queryTerms, wordDB)
         val resultMap = ConcurrentHashMap<String, Double>()
-        queryTermIds.forEach { queryTermId ->
+        queryTermIds.parallelStream().forEach { queryTermId ->
             if (queryTermId.size > 1) {  //Phrase detected
                 urls.forEach { urlId ->
                     //Phrase is in document
@@ -102,9 +102,14 @@ object Ranker {
 
         for (inputWords in inputWordsList) {
             val phraseList = mutableListOf<String>()
+            val isPhrase = inputWords.size > 1
             for (inputWord in inputWords) {
                 val wordId = wordDB[inputWord]
                 if (wordId != null) phraseList.add(wordId)
+                else if(isPhrase) {
+                    phraseList.clear()
+                    break
+                }
             }
             if(phraseList.isNotEmpty())
                 result.add(phraseList)
