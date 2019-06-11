@@ -1,5 +1,8 @@
 *.iml
 *.txt
+*.docx
+*.pdf
+*.properties
 .gradle/
 .idea/
 out/
